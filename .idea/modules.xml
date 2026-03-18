@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/live-classes-service/live-classes-demo.iml" filepath="$PROJECT_DIR$/live-classes-service/live-classes-demo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/live-classes-service.iml" filepath="$PROJECT_DIR$/.idea/live-classes-service.iml" />
+    </modules>
+  </component>
+</project>
