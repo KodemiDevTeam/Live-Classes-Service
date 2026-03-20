@@ -32,6 +32,7 @@ public class SessionController {
 
         log.info("Session created | sessionId={}", response.getSessionId());
 
+
         return ResponseEntity.ok(response);
     }
 

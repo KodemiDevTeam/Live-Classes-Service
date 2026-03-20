@@ -30,7 +30,6 @@ public class SessionServiceImpl implements SessionService {
     private final JwtUtil jwtUtil;
     private final VideoSDKService videoSDKService;
     private final EnrollmentClient enrollmentClient;
-
     private static final String ROLE_TRAINER = "TRAINER";
     private static final String ROLE_LEARNER = "LEARNER";
 
@@ -112,7 +111,6 @@ public class SessionServiceImpl implements SessionService {
         entity.setActionType(ACTION_STARTED);
 
         log.info("Session started: {}", sessionId);
-
         return mapToResponse(entity, organizerId, organizerName);
     }
 

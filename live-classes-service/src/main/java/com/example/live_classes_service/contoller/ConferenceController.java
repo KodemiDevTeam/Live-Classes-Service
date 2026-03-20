@@ -98,6 +98,7 @@ public class ConferenceController {
     ) {
         log.info("End conference request | conferenceId={}", conferenceId);
 
+
         String response = service.endConference(conferenceId, token);
 
         log.info("Conference ended | conferenceId={}", conferenceId);

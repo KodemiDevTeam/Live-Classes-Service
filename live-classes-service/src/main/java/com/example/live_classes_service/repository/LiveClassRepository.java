@@ -13,7 +13,6 @@ import java.util.List;
 public class LiveClassRepository {
 
     private final DynamoDBMapper dynamoDBMapper;
-
     public LiveClassRepository(DynamoDBMapper dynamoDBMapper) {
         this.dynamoDBMapper = dynamoDBMapper;
     }

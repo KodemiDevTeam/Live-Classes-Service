@@ -41,6 +41,7 @@ public class ConferenceRepository {
         }
     }
 
+
     public ConferenceEntity findById(String id) {
         return dynamoDBMapper.load(ConferenceEntity.class, id);
     }

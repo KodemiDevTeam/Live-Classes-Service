@@ -35,11 +35,9 @@ public class LiveClassServiceImpl implements LiveClassService {
 
     private static final String ROLE_TRAINER = "TRAINER";
     private static final String ROLE_LEARNER = "LEARNER";
-
     private static final String STATUS_STARTED = "LIVE_STARTED";
     private static final String STATUS_ENDED = "ENDED";
     private static final String STATUS_SCHEDULED = "SCHEDULED";
-
     private static final String ACTION_CREATED = "CREATED";
     private static final String ACTION_STARTED = "STARTED";
 

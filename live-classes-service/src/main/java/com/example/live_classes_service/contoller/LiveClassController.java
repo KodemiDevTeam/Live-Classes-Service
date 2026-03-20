@@ -22,6 +22,7 @@ public class LiveClassController {
 
     private final LiveClassService service;
 
+
     @PostMapping
     public ResponseEntity<LiveClassResponseDTO> createLiveClass(
             @Valid @RequestBody CreateLiveClassRequest request,

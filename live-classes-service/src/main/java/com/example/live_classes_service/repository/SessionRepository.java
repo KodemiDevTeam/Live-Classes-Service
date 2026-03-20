@@ -23,7 +23,6 @@ public class SessionRepository {
 
     @Value("${aws.dynamodb.table.session:Session}")
     private String tableName;
-
     public SessionRepository(DynamoDBMapper dynamoDBMapper,
                              AmazonDynamoDB amazonDynamoDB) {
         this.dynamoDBMapper = dynamoDBMapper;

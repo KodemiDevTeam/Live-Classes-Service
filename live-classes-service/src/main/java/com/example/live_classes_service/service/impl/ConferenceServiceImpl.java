@@ -30,11 +30,9 @@ public class ConferenceServiceImpl implements ConferenceService {
     private final JwtUtil jwtUtil;
     private final VideoSDKService videoSDKService;
     private final EnrollmentClient enrollmentClient;
-
     private static final String STATUS_STARTED = "CONFERENCE_STARTED";
     private static final String STATUS_ENDED = "ENDED";
     private static final String STATUS_SCHEDULED = "SCHEDULED";
-
     private static final String ROLE_TRAINER = "TRAINER";
     private static final String ROLE_LEARNER = "LEARNER";
 
