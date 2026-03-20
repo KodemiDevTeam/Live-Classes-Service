@@ -21,7 +21,6 @@ public class DynamoDBConfig {
 
     @Bean
     public AmazonDynamoDB amazonDynamoDB() {
-        // Production: uses IAM role attached to instance/task
         return AmazonDynamoDBClientBuilder.standard()
                 .withRegion(dynamodbRegion)
                 .withCredentials(DefaultAWSCredentialsProviderChain.getInstance())

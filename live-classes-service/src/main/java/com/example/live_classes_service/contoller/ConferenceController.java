@@ -4,62 +4,105 @@ import com.example.live_classes_service.dto.request.CreateConferenceRequest;
 import com.example.live_classes_service.dto.response.ConferenceJoinResponseDTO;
 import com.example.live_classes_service.dto.response.ConferenceResponseDTO;
 import com.example.live_classes_service.service.ConferenceService;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/conference")
+@RequestMapping("/api/v1/conferences")
+@RequiredArgsConstructor
+@Slf4j
 public class ConferenceController {
 
     private final ConferenceService service;
 
-    public ConferenceController(ConferenceService service) {
-        this.service = service;
-    }
-
-    @PostMapping("/create")
-    public ConferenceResponseDTO createConference(
-            @RequestBody CreateConferenceRequest request,
+    @PostMapping
+    public ResponseEntity<ConferenceResponseDTO> createConference(
+            @Valid @RequestBody CreateConferenceRequest request,
             @RequestHeader("Authorization") String token
     ) {
-        return service.createConference(request, token);
+        log.info("Create conference request received | title={} | scheduledAt={}",
+                request.getTitle(), request.getScheduledAt());
+
+        ConferenceResponseDTO response = service.createConference(request, token);
+
+        log.info("Conference created successfully | conferenceId={}", response.getConferenceId());
+
+        return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/start/{conferenceId}")
-    public ConferenceResponseDTO startConference(
+    @PostMapping("/{conferenceId}/start")
+    public ResponseEntity<ConferenceResponseDTO> startConference(
             @PathVariable String conferenceId,
             @RequestHeader("Authorization") String token
     ) {
-        return service.startConference(conferenceId, token);
+        log.info("Start conference request | conferenceId={}", conferenceId);
+
+        ConferenceResponseDTO response = service.startConference(conferenceId, token);
+
+        log.info("Conference started successfully | conferenceId={}", conferenceId);
+
+        return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/join/{conferenceId}")
-    public ConferenceJoinResponseDTO joinConference(
+    @GetMapping("/{conferenceId}/join")
+    public ResponseEntity<ConferenceJoinResponseDTO> joinConference(
             @PathVariable String conferenceId,
             @RequestHeader("Authorization") String token
     ) {
-        return service.joinConference(conferenceId, token);
+        log.info("Join conference request | conferenceId={}", conferenceId);
+
+        ConferenceJoinResponseDTO response = service.joinConference(conferenceId, token);
+
+        log.info("Conference join token generated | conferenceId={}", conferenceId);
+
+        return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/start/recording//{conferenceId}")
-    public String startRecording(
+    @PostMapping("/{conferenceId}/recording/start")
+    public ResponseEntity<String> startRecording(
             @PathVariable String conferenceId,
             @RequestHeader("Authorization") String token
     ) {
-        return service.startRecording(conferenceId, token);
+        log.info("Start recording request | conferenceId={}", conferenceId);
+
+        String response = service.startRecording(conferenceId, token);
+
+        log.info("Recording started | conferenceId={}", conferenceId);
+
+        return ResponseEntity.ok(response);
     }
 
-    @PostMapping("stop/recording/{conferenceId}")
-    public String stopRecording(
+    @PostMapping("/{conferenceId}/recording/stop")
+    public ResponseEntity<String> stopRecording(
             @PathVariable String conferenceId,
             @RequestHeader("Authorization") String token
     ) {
-        return service.stopRecording(conferenceId, token);
+        log.info("Stop recording request | conferenceId={}", conferenceId);
+
+        String response = service.stopRecording(conferenceId, token);
+
+        log.info("Recording stopped | conferenceId={}", conferenceId);
+
+        return ResponseEntity.ok(response);
     }
-    @PostMapping("/end/{conferenceId}")
-    public String endLiveClass(
+
+    @PostMapping("/{conferenceId}/end")
+    public ResponseEntity<String> endConference(
             @PathVariable String conferenceId,
             @RequestHeader("Authorization") String token
     ) {
-        return service.endConference(conferenceId, token);
+        log.info("End conference request | conferenceId={}", conferenceId);
+
+
+        String response = service.endConference(conferenceId, token);
+
+        log.info("Conference ended | conferenceId={}", conferenceId);
+
+        return ResponseEntity.ok(response);
     }
 }
