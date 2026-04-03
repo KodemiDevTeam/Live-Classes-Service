@@ -18,6 +18,8 @@ pipeline {
 
     stages {
 
+        /* ================= CLEAN ================= */
+
         stage('Clean Workspace') {
             steps {
                 cleanWs()
@@ -57,14 +59,16 @@ pipeline {
 
         stage('Build (No Tests)') {
             steps {
-                sh '''
-                    echo "===== BUILD WITHOUT TESTS ====="
-                    
-                    mvn clean install \
-                    -Dmaven.test.skip=true \
-                    -Deureka.client.enabled=false \
-                    -Dspring.cloud.discovery.enabled=false
-                '''
+                dir('live-classes-service') {
+                    sh '''
+                        echo "===== BUILD WITHOUT TESTS ====="
+
+                        mvn clean install \
+                        -Dmaven.test.skip=true \
+                        -Deureka.client.enabled=false \
+                        -Dspring.cloud.discovery.enabled=false
+                    '''
+                }
             }
         }
 
@@ -72,19 +76,21 @@ pipeline {
 
         stage('SonarQube Analysis (No Tests)') {
             steps {
-                withSonarQubeEnv('SonarQube2') {
-                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                        sh '''
-                            echo "===== SONAR ANALYSIS ====="
+                dir('live-classes-service') {
+                    withSonarQubeEnv('SonarQube2') {
+                        withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                            sh '''
+                                echo "===== SONAR ANALYSIS ====="
 
-                            mvn sonar:sonar \
-                            -Dsonar.projectKey=$SONAR_PROJECT_KEY \
-                            -Dsonar.projectName=$SONAR_PROJECT_NAME \
-                            -Dsonar.login=$SONAR_TOKEN \
-                            -Dsonar.coverage.exclusions=** \
-                            -Dsonar.tests= \
-                            -Dsonar.test.exclusions=**
-                        '''
+                                mvn sonar:sonar \
+                                -Dsonar.projectKey=$SONAR_PROJECT_KEY \
+                                -Dsonar.projectName=$SONAR_PROJECT_NAME \
+                                -Dsonar.login=$SONAR_TOKEN \
+                                -Dsonar.coverage.exclusions=** \
+                                -Dsonar.tests= \
+                                -Dsonar.test.exclusions=**
+                            '''
+                        }
                     }
                 }
             }
@@ -104,17 +110,21 @@ pipeline {
 
         stage('OWASP Dependency Check') {
             steps {
-                withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_KEY')]) {
+                dir('live-classes-service') {
+                    withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_KEY')]) {
 
-                    sh 'echo "===== RUNNING OWASP CHECK ====="'
+                        sh '''
+                            echo "===== RUNNING OWASP CHECK ====="
+                        '''
 
-                    dependencyCheck(
-                        additionalArguments: "--nvdApiKey ${NVD_KEY} --format CSV --out . --disableOssIndex",
-                        odcInstallation: 'Default'
-                    )
+                        dependencyCheck(
+                            additionalArguments: "--nvdApiKey ${NVD_KEY} --format XML --out . --disableOssIndex",
+                            odcInstallation: 'Default'
+                        )
+                    }
+
+                    dependencyCheckPublisher pattern: 'dependency-check-report.xml'
                 }
-
-                dependencyCheckPublisher pattern: 'dependency-check-report.csv'
             }
         }
 
@@ -122,7 +132,7 @@ pipeline {
 
         stage('Archive Reports') {
             steps {
-                archiveArtifacts artifacts: 'dependency-check-report.csv',
+                archiveArtifacts artifacts: 'live-classes-service/dependency-check-report.xml',
                                  fingerprint: true
             }
         }
@@ -130,11 +140,11 @@ pipeline {
 
     post {
         success {
-            echo 'SUCCESS: Build + Sonar + OWASP completed (Webhook Triggered)'
+            echo 'SUCCESS: Build + Sonar + OWASP completed'
         }
         failure {
             echo 'FAILED: Check logs'
-        }        
+        }
         always {
             echo 'Pipeline execution finished'
         }
