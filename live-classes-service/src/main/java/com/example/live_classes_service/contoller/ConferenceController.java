@@ -20,7 +20,7 @@ public class ConferenceController {
 
     private final ConferenceService service;
 
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<ConferenceResponseDTO> createConference(
             @Valid @RequestBody CreateConferenceRequest request,
             @RequestHeader("Authorization") String token
