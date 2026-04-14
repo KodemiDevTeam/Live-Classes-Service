@@ -115,6 +115,10 @@ public class LiveClassServiceImpl implements LiveClassService {
 
         LiveClassEntity entity = getLiveClassOrThrow(sessionId);
 
+        if (!STATUS_STARTED.equals(entity.getStatus())) {
+            throw new BadRequestException("Live class is not started yet");
+        }
+
         String userId = jwtUtil.extractUserId(token);
         String role = jwtUtil.extractRole(token);
 

@@ -118,6 +118,9 @@ public class SessionServiceImpl implements SessionService {
     public SessionJoinResponseDTO joinSession(String sessionId, String token) {
 
         SessionEntity entity = getSessionOrThrow(sessionId);
+        if (!STATUS_STARTED.equals(entity.getStatus())) {
+            throw new BadRequestException("session is not started yet");
+        }
 
         String userId = jwtUtil.extractUserId(token);
         String role = jwtUtil.extractRole(token);

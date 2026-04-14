@@ -5,6 +5,8 @@ import com.example.live_classes_service.dto.response.ConferenceJoinResponseDTO;
 import com.example.live_classes_service.dto.response.ConferenceResponseDTO;
 import com.example.live_classes_service.dto.response.SessionStatusResponse;
 import com.example.live_classes_service.exception.BadRequestException;
+import com.example.live_classes_service.exception.NullBodyException;
+import com.example.live_classes_service.exception.TokenNotFoundException;
 import com.example.live_classes_service.exception.UnauthorizedException;
 import com.example.live_classes_service.feign.EnrollmentClient;
 import com.example.live_classes_service.model.ConferenceEntity;
@@ -18,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -30,20 +33,53 @@ public class ConferenceServiceImpl implements ConferenceService {
     private final JwtUtil jwtUtil;
     private final VideoSDKService videoSDKService;
     private final EnrollmentClient enrollmentClient;
+
     private static final String STATUS_STARTED = "CONFERENCE_STARTED";
     private static final String STATUS_ENDED = "ENDED";
     private static final String STATUS_SCHEDULED = "SCHEDULED";
     private static final String ROLE_TRAINER = "TRAINER";
     private static final String ROLE_LEARNER = "LEARNER";
-
     private static final String ACTION_CREATED = "CREATED";
 
+    private String extractUserIdOrThrow(String token) {
+        if (token == null || token.isBlank()) {
+            throw new TokenNotFoundException("JWT token is missing");
+        }
+
+        try {
+            String userId = jwtUtil.extractUserId(token);
+            if (userId == null) {
+                throw new UnauthorizedException("Invalid JWT token");
+            }
+            return userId;
+        } catch (Exception e) {
+            throw new UnauthorizedException("Invalid or expired JWT token");
+        }
+    }
+
+    private String extractUserName(String token) {
+        try {
+            return jwtUtil.extractName(token);
+        } catch (Exception e) {
+            return "Unknown";
+        }
+    }
+
+    private String extractRole(String token) {
+        try {
+            return jwtUtil.extractRole(token);
+        } catch (Exception e) {
+            throw new UnauthorizedException("Invalid role in token");
+        }
+    }
 
     @Override
     public ConferenceResponseDTO createConference(CreateConferenceRequest request, String token) {
+        if (request == null) throw new NullBodyException("Request body cannot be null");
 
-        String organizerId = jwtUtil.extractUserId(token);
-        String organizerName = jwtUtil.extractName(token);
+        String organizerId = extractUserIdOrThrow(token);
+        System.out.println(organizerId);
+        String organizerName = extractUserName(token);
 
         String roomId = retry(() -> videoSDKService.createRoom());
 
@@ -69,23 +105,22 @@ public class ConferenceServiceImpl implements ConferenceService {
         return mapToResponse(entity);
     }
 
-
     @Override
     public ConferenceResponseDTO startConference(String conferenceId, String token) {
+        if (conferenceId == null) throw new NullBodyException("ConferenceId cannot be null");
 
         ConferenceEntity entity = getConferenceOrThrow(conferenceId);
 
-        String organizerId = jwtUtil.extractUserId(token);
-        String organizerName = jwtUtil.extractName(token);
+        String userId = extractUserIdOrThrow(token);
+        String userName = extractUserName(token);
 
-        validateOrganizer(entity, organizerId);
+        validateOrganizer(entity, userId);
 
         if (STATUS_ENDED.equals(entity.getStatus())) {
             throw new BadRequestException("Conference already ended");
         }
 
         String startedAt = Instant.now().toString();
-
         boolean updated = repository.updateStatusIfNotStarted(conferenceId, startedAt);
 
         if (!updated) {
@@ -97,16 +132,21 @@ public class ConferenceServiceImpl implements ConferenceService {
 
         log.info("Conference started: {}", conferenceId);
 
-        return mapToResponse(entity, organizerId, organizerName);
+        return mapToResponse(entity, userId, userName);
     }
 
     @Override
     public ConferenceJoinResponseDTO joinConference(String conferenceId, String token) {
+        if (conferenceId == null) throw new NullBodyException("ConferenceId cannot be null");
 
         ConferenceEntity entity = getConferenceOrThrow(conferenceId);
 
-        String userId = jwtUtil.extractUserId(token);
-        String role = jwtUtil.extractRole(token);
+        if (!STATUS_STARTED.equals(entity.getStatus())) {
+            throw new BadRequestException("Conference is not started yet");
+        }
+
+        String userId = extractUserIdOrThrow(token);
+        String role = extractRole(token);
 
         validateJoinAccess(entity, userId, role, token);
 
@@ -118,13 +158,11 @@ public class ConferenceServiceImpl implements ConferenceService {
                 .build();
     }
 
-
     @Override
     public String startRecording(String conferenceId, String token) {
-
         ConferenceEntity entity = getConferenceOrThrow(conferenceId);
 
-        String userId = jwtUtil.extractUserId(token);
+        String userId = extractUserIdOrThrow(token);
         validateOrganizer(entity, userId);
 
         String recordingId = retry(() -> videoSDKService.startRecording(entity.getRoomId()));
@@ -133,36 +171,30 @@ public class ConferenceServiceImpl implements ConferenceService {
         entity.setRecordingUrl(recordingId);
 
         repository.save(entity);
-        log.info("Recording started for conference: {}", conferenceId);
 
         return "Recording Started";
     }
 
     @Override
     public String stopRecording(String conferenceId, String token) {
-
         ConferenceEntity entity = getConferenceOrThrow(conferenceId);
 
-        String userId = jwtUtil.extractUserId(token);
+        String userId = extractUserIdOrThrow(token);
         validateOrganizer(entity, userId);
 
         videoSDKService.stopRecording(entity.getRoomId());
 
         entity.setIsRecording(false);
-
         repository.save(entity);
-        log.info("Recording stopped for conference: {}", conferenceId);
 
         return "Recording Stopped";
     }
 
-
     @Override
     public String endConference(String conferenceId, String token) {
-
         ConferenceEntity entity = getConferenceOrThrow(conferenceId);
 
-        String userId = jwtUtil.extractUserId(token);
+        String userId = extractUserIdOrThrow(token);
         validateOrganizer(entity, userId);
 
         videoSDKService.endRoom(entity.getRoomId());
@@ -171,7 +203,6 @@ public class ConferenceServiceImpl implements ConferenceService {
         entity.setEndedAt(Instant.now().toString());
 
         repository.save(entity);
-        log.info("Conference ended: {}", conferenceId);
 
         return "Conference Ended";
     }
@@ -185,7 +216,11 @@ public class ConferenceServiceImpl implements ConferenceService {
     }
 
     private void validateOrganizer(ConferenceEntity entity, String userId) {
-        if (!entity.getOrganizerId().equals(userId)) {
+        if (entity.getOrganizerId() == null) {
+            throw new IllegalStateException("Organizer ID missing in DB");
+        }
+
+        if (!Objects.equals(entity.getOrganizerId(), userId)) {
             throw new UnauthorizedException("Only organizer allowed");
         }
     }
@@ -193,7 +228,7 @@ public class ConferenceServiceImpl implements ConferenceService {
     private void validateJoinAccess(ConferenceEntity entity, String userId, String role, String token) {
 
         if (ROLE_TRAINER.equals(role)) {
-            if (!entity.getOrganizerId().equals(userId)) {
+            if (!Objects.equals(entity.getOrganizerId(), userId)) {
                 throw new UnauthorizedException("Not organizer");
             }
             return;
