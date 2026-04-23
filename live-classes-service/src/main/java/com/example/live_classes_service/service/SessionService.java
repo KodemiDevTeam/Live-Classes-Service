@@ -1,7 +1,6 @@
 package com.example.live_classes_service.service;
 
 import com.example.live_classes_service.dto.request.CreateSessionRequest;
-import com.example.live_classes_service.dto.response.LiveClassJoinResponseDTO;
 import com.example.live_classes_service.dto.response.SessionJoinResponseDTO;
 import com.example.live_classes_service.dto.response.SessionResponseDTO;
 

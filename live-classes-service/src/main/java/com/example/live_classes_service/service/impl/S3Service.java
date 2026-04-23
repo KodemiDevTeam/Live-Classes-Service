@@ -1,4 +1,6 @@
 package com.example.live_classes_service.service.impl;
+
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -6,7 +8,9 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.InputStream;
-import java.net.URL;
+import java.net.URI;
+
+@Slf4j
 @Service
 public class S3Service {
 
@@ -20,11 +24,8 @@ public class S3Service {
     }
 
     public String uploadRecording(String recordingUrl, String sessionId) {
-
         try {
-
-            URL url = new URL(recordingUrl);
-            InputStream inputStream = url.openStream();
+            InputStream inputStream = URI.create(recordingUrl).toURL().openStream();
 
             String key = "recordings/" + sessionId + ".mp4";
 
@@ -42,6 +43,7 @@ public class S3Service {
             return "https://" + bucketName + ".s3.amazonaws.com/" + key;
 
         } catch (Exception e) {
+            log.error("Failed to upload recording to S3 for sessionId={}", sessionId, e);
             throw new RuntimeException("Failed to upload recording to S3", e);
         }
     }

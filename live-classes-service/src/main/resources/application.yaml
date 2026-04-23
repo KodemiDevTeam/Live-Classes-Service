@@ -7,27 +7,26 @@ spring:
 
 dynamodb:
   region: eu-north-1
-  bucket-name: kodemilabs-recordings
 
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: http://172.18.2.70:8761/eureka/
   instance:
     prefer-ip-address: true
 
 jwt:
-  secret: k8Jd9wQ2x+4aB3d1FJtL8vZ5X0yQ1V7n2gHqM4sP1tE=
+  secret: ${JWT_SECRET}
 
 videosdk:
   api:
-    key: 9ea012b4-b6ff-4c9d-b7e1-644117bf5c94
-    secret: 9091eade668321ecef4216ebd0516761742da5108f12caf5be4f206b2f58ae65
+    key: ${VIDEOSDK_API_KEY}
+    secret: ${VIDEOSDK_SECRET}
     endpoint: https://api.videosdk.live/v2
 
 aws:
   s3:
     bucket: kodemilabs-recordings
-    region: ap-south-1
-    accessKey: YOUR_AWS_ACCESS_KEY
-    secretKey: YOUR_AWS_SECRET_KEY
+    region: eu-north-1
+    accessKey: ${AWS_ACCESS_KEY}
+    secretKey: ${AWS_SECRET_KEY}

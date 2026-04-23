@@ -21,7 +21,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -138,7 +137,7 @@ public class LiveClassServiceImpl implements LiveClassService {
         return repository.findByCourseId(courseId)
                 .stream()
                 .map(this::mapToResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
 
@@ -229,8 +228,12 @@ public class LiveClassServiceImpl implements LiveClassService {
                     throw new BadRequestException("User not enrolled");
                 }
 
-            } catch (Exception e) {
-                log.error("Enrollment service failed", e);
+            } catch (BadRequestException e) {
+                throw e;
+            } catch (UnauthorizedException e) {
+                throw e;
+            } catch (feign.FeignException e) {
+                log.error("Enrollment service failed for courseId={}", entity.getCourseId(), e);
                 throw new BadRequestException("Enrollment validation failed");
             }
             return;

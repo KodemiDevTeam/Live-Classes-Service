@@ -223,8 +223,12 @@ public class SessionServiceImpl implements SessionService {
                     throw new BadRequestException("User not enrolled");
                 }
 
-            } catch (Exception e) {
-                log.error("Enrollment check failed", e);
+            } catch (BadRequestException e) {
+                throw e;
+            } catch (UnauthorizedException e) {
+                throw e;
+            } catch (feign.FeignException e) {
+                log.error("Enrollment check failed for sessionId={}", entity.getSessionId(), e);
                 throw new BadRequestException("Enrollment validation failed");
             }
             return;
