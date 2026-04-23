@@ -3,6 +3,7 @@ package com.example.live_classes_service.repository;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.*;
 import com.amazonaws.services.dynamodbv2.model.*;
+import com.example.live_classes_service.exception.BadRequestException;
 import com.example.live_classes_service.model.SessionEntity;
 
 import lombok.extern.slf4j.Slf4j;
@@ -80,7 +81,7 @@ public class SessionRepository {
             return false;
         } catch (Exception e) {
             log.error("DynamoDB update failed", e);
-            throw new RuntimeException("Database update failed", e);
+            throw new BadRequestException("Database update failed");
         }
     }
 

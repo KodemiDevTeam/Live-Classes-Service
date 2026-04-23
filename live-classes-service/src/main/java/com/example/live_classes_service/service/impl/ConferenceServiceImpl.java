@@ -78,10 +78,10 @@ public class ConferenceServiceImpl implements ConferenceService {
         if (request == null) throw new NullBodyException("Request body cannot be null");
 
         String organizerId = extractUserIdOrThrow(token);
-        System.out.println(organizerId);
+        log.info("Creating conference for organizer: {}", organizerId);
         String organizerName = extractUserName(token);
 
-        String roomId = retry(() -> videoSDKService.createRoom());
+        String roomId = retry(videoSDKService::createRoom);
 
         ConferenceEntity entity = ConferenceEntity.builder()
                 .conferenceId(UUID.randomUUID().toString())

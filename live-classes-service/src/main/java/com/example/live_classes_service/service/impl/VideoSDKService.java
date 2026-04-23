@@ -5,6 +5,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -12,9 +13,14 @@ import org.springframework.web.client.RestTemplate;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+
+
 @Slf4j
 @Service
 public class VideoSDKService {
+
+    private static final String AUTHORIZATION = "Authorization";
+    private static final String ROOM_ID = "roomId";
 
     @Value("${videosdk.api.key}")
     private String apiKey;
@@ -48,7 +54,7 @@ public class VideoSDKService {
         claims.put("permissions", List.of("allow_join", "allow_mod"));
         claims.put("version", 2);
 
-        String token = Jwts.builder()
+        return Jwts.builder()
                 .setClaims(claims)
                 .setIssuedAt(new Date(now))
                 .setExpiration(new Date(now + 24 * 60 * 60 * 1000))
@@ -57,8 +63,6 @@ public class VideoSDKService {
                         SignatureAlgorithm.HS256
                 )
                 .compact();
-
-        return token;
     }
 
     public String createRoom() {
@@ -67,16 +71,21 @@ public class VideoSDKService {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", token);
+        headers.set(AUTHORIZATION, token);
 
         HttpEntity<String> request = new HttpEntity<>("{}", headers);
 
-        ResponseEntity<Map> response = restTemplate.postForEntity(
-                apiEndpoint + "/rooms", request, Map.class);
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                apiEndpoint + "/rooms", HttpMethod.POST, request,
+                new ParameterizedTypeReference<Map<String, Object>>() {});
 
         Map<String, Object> body = response.getBody();
 
-        String roomId = (String) body.get("roomId");
+        if (body == null) {
+            throw new IllegalStateException("Empty response body from VideoSDK createRoom");
+        }
+
+        String roomId = (String) body.get(ROOM_ID);
 
         log.info("VideoSDK room created: {}", roomId);
 
@@ -88,7 +97,7 @@ public class VideoSDKService {
         String token = generateToken();
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", token);
+        headers.set(AUTHORIZATION, token);
 
         HttpEntity<Void> request = new HttpEntity<>(headers);
 
@@ -117,7 +126,7 @@ public class VideoSDKService {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", token);
+        headers.set(AUTHORIZATION, token);
 
         Map<String, Object> storageConfig = new HashMap<>();
         storageConfig.put("type", "s3");
@@ -134,15 +143,20 @@ public class VideoSDKService {
         config.put("storage", storageConfig);
 
         Map<String, Object> body = new HashMap<>();
-        body.put("roomId", roomId);
+        body.put(ROOM_ID, roomId);
         body.put("config", config);
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 
-        ResponseEntity<Map> response = restTemplate.postForEntity(
-                apiEndpoint + "/recordings/start", request, Map.class);
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                apiEndpoint + "/recordings/start", HttpMethod.POST, request,
+                new ParameterizedTypeReference<Map<String, Object>>() {});
 
         Map<String, Object> responseBody = response.getBody();
+
+        if (responseBody == null) {
+            throw new IllegalStateException("Empty response body from VideoSDK startRecording");
+        }
 
         String recordingId = (String) responseBody.get("id");
 
@@ -157,10 +171,10 @@ public class VideoSDKService {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", token);
+        headers.set(AUTHORIZATION, token);
 
         Map<String, Object> body = new HashMap<>();
-        body.put("roomId", roomId);
+        body.put(ROOM_ID, roomId);
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 
@@ -176,10 +190,10 @@ public class VideoSDKService {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", token);
+        headers.set(AUTHORIZATION, token);
 
         Map<String, Object> body = new HashMap<>();
-        body.put("roomId", roomId);
+        body.put(ROOM_ID, roomId);
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 

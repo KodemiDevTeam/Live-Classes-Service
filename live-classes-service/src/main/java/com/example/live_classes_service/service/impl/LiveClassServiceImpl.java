@@ -21,7 +21,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -53,7 +52,7 @@ public class LiveClassServiceImpl implements LiveClassService {
         String trainerId = jwtUtil.extractUserId(token);
         String trainerName = jwtUtil.extractName(token);
 
-        String roomId = retry(() -> videoSDKService.createRoom());
+        String roomId = retry(videoSDKService::createRoom);
 
         LiveClassEntity entity = LiveClassEntity.builder()
                 .liveClassId(UUID.randomUUID().toString())
@@ -138,7 +137,7 @@ public class LiveClassServiceImpl implements LiveClassService {
         return repository.findByCourseId(courseId)
                 .stream()
                 .map(this::mapToResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
 

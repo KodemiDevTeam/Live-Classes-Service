@@ -3,7 +3,6 @@ package com.example.live_classes_service.service;
 import com.example.live_classes_service.dto.request.CreateConferenceRequest;
 import com.example.live_classes_service.dto.response.ConferenceJoinResponseDTO;
 import com.example.live_classes_service.dto.response.ConferenceResponseDTO;
-import com.example.live_classes_service.dto.response.LiveClassJoinResponseDTO;
 
 public interface ConferenceService {
 
