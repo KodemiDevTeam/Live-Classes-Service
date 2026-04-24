@@ -7,6 +7,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
@@ -45,17 +46,21 @@ class VideoSDKServiceTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void createRoom_success() {
-        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(Map.class)))
-                .thenReturn(ResponseEntity.ok(Map.of("roomId", "room-123")));
+        ResponseEntity<Map<String, Object>> response = ResponseEntity.ok(Map.of("roomId", "room-123"));
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class),
+                any(ParameterizedTypeReference.class))).thenReturn(response);
         assertEquals("room-123", service.createRoom());
     }
 
     @Test
-    void createRoom_nullBody_throwsNullBodyException() {
-        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(Map.class)))
-                .thenReturn(ResponseEntity.ok(null));
-        assertThrows(NullBodyException.class, () -> service.createRoom());
+    @SuppressWarnings("unchecked")
+    void createRoom_nullBody_throwsIllegalState() {
+        ResponseEntity<Map<String, Object>> response = ResponseEntity.ok(null);
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class),
+                any(ParameterizedTypeReference.class))).thenReturn(response);
+        assertThrows(IllegalStateException.class, () -> service.createRoom());
     }
 
     @Test
@@ -73,17 +78,21 @@ class VideoSDKServiceTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void startRecording_success() {
-        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(Map.class)))
-                .thenReturn(ResponseEntity.ok(Map.of("id", "rec-123")));
+        ResponseEntity<Map<String, Object>> response = ResponseEntity.ok(Map.of("id", "rec-123"));
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class),
+                any(ParameterizedTypeReference.class))).thenReturn(response);
         assertEquals("rec-123", service.startRecording("room-123"));
     }
 
     @Test
-    void startRecording_nullBody_throwsNullBodyException() {
-        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(Map.class)))
-                .thenReturn(ResponseEntity.ok(null));
-        assertThrows(NullBodyException.class, () -> service.startRecording("room-123"));
+    @SuppressWarnings("unchecked")
+    void startRecording_nullBody_throwsIllegalState() {
+        ResponseEntity<Map<String, Object>> response = ResponseEntity.ok(null);
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class),
+                any(ParameterizedTypeReference.class))).thenReturn(response);
+        assertThrows(IllegalStateException.class, () -> service.startRecording("room-123"));
     }
 
     @Test
