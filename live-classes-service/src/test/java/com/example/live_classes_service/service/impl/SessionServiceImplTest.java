@@ -65,7 +65,8 @@ class SessionServiceImplTest {
     @Test
     void createSession_notTrainer_throwsUnauthorized() {
         when(jwtUtil.extractRole(TOKEN)).thenReturn("LEARNER");
-        assertThrows(UnauthorizedException.class, () -> service.createSession(new CreateSessionRequest(), TOKEN));
+        CreateSessionRequest req = new CreateSessionRequest();
+        assertThrows(UnauthorizedException.class, () -> service.createSession(req, TOKEN));
         verify(repository, never()).save(any());
     }
 
@@ -75,7 +76,8 @@ class SessionServiceImplTest {
         when(jwtUtil.extractUserId(TOKEN)).thenReturn(ORGANIZER_ID);
         when(jwtUtil.extractName(TOKEN)).thenReturn(ORGANIZER_NAME);
         when(videoSDKService.createRoom()).thenThrow(new RuntimeException("down"));
-        assertThrows(BadRequestException.class, () -> service.createSession(new CreateSessionRequest(), TOKEN));
+        CreateSessionRequest req = new CreateSessionRequest();
+        assertThrows(BadRequestException.class, () -> service.createSession(req, TOKEN));
     }
 
     @Test

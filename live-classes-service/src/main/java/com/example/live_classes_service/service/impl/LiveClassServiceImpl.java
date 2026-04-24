@@ -228,9 +228,7 @@ public class LiveClassServiceImpl implements LiveClassService {
                     throw new BadRequestException("User not enrolled");
                 }
 
-            } catch (BadRequestException e) {
-                throw e;
-            } catch (UnauthorizedException e) {
+            } catch (BadRequestException | UnauthorizedException e) {
                 throw e;
             } catch (feign.FeignException e) {
                 log.error("Enrollment service failed for courseId={}", entity.getCourseId(), e);

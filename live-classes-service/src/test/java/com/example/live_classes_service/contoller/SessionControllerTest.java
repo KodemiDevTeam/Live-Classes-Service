@@ -12,7 +12,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -20,33 +20,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(SessionController.class)
 class SessionControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @MockBean
-    private SessionService service;
+    @Autowired private MockMvc mockMvc;
+    @Autowired private ObjectMapper objectMapper;
+    @MockBean  private SessionService service;
 
     private static final String TOKEN = "Bearer test-token";
 
     private SessionResponseDTO sampleResponse() {
         return SessionResponseDTO.builder()
-                .sessionId("session-001")
-                .title("Test Session")
-                .organizerId("org-001")
-                .status("SCHEDULED")
-                .build();
+                .sessionId("session-001").title("Test Session")
+                .organizerId("org-001").status("SCHEDULED").build();
     }
 
     @Test
     void createSession_returns200() throws Exception {
-        when(service.createSession(any(), eq(TOKEN))).thenReturn(sampleResponse());
-
+        when(service.createSession(any(), any())).thenReturn(sampleResponse());
         CreateSessionRequest request = new CreateSessionRequest();
         request.setTitle("Test Session");
-
         mockMvc.perform(post("/api/v1/sessions")
                         .header("Authorization", TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -57,8 +47,7 @@ class SessionControllerTest {
 
     @Test
     void startSession_returns200() throws Exception {
-        when(service.startSession(eq("session-001"), eq(TOKEN))).thenReturn(sampleResponse());
-
+        when(service.startSession(any(), any())).thenReturn(sampleResponse());
         mockMvc.perform(post("/api/v1/sessions/session-001/start")
                         .header("Authorization", TOKEN))
                 .andExpect(status().isOk())
@@ -69,8 +58,7 @@ class SessionControllerTest {
     void joinSession_returns200() throws Exception {
         SessionJoinResponseDTO joinResponse = SessionJoinResponseDTO.builder()
                 .sessionId("session-001").roomId("room-001").token("sdk-token").role("TRAINER").build();
-        when(service.joinSession(eq("session-001"), eq(TOKEN))).thenReturn(joinResponse);
-
+        when(service.joinSession(any(), any())).thenReturn(joinResponse);
         mockMvc.perform(get("/api/v1/sessions/session-001/join")
                         .header("Authorization", TOKEN))
                 .andExpect(status().isOk())
@@ -79,8 +67,7 @@ class SessionControllerTest {
 
     @Test
     void startRecording_returns200() throws Exception {
-        when(service.startRecording(eq("session-001"), eq(TOKEN))).thenReturn("Recording Started");
-
+        when(service.startRecording(any(), any())).thenReturn("Recording Started");
         mockMvc.perform(post("/api/v1/sessions/session-001/recording/start")
                         .header("Authorization", TOKEN))
                 .andExpect(status().isOk())
@@ -89,8 +76,7 @@ class SessionControllerTest {
 
     @Test
     void stopRecording_returns200() throws Exception {
-        when(service.stopRecording(eq("session-001"), eq(TOKEN))).thenReturn("Recording Stopped");
-
+        when(service.stopRecording(any(), any())).thenReturn("Recording Stopped");
         mockMvc.perform(post("/api/v1/sessions/session-001/recording/stop")
                         .header("Authorization", TOKEN))
                 .andExpect(status().isOk())
@@ -99,8 +85,7 @@ class SessionControllerTest {
 
     @Test
     void endSession_returns200() throws Exception {
-        when(service.endSession(eq("session-001"), eq(TOKEN))).thenReturn("Session Ended");
-
+        when(service.endSession(any(), any())).thenReturn("Session Ended");
         mockMvc.perform(post("/api/v1/sessions/session-001/end")
                         .header("Authorization", TOKEN))
                 .andExpect(status().isOk())

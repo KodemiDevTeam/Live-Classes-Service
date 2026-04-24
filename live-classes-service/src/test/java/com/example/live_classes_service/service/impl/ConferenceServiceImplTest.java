@@ -70,7 +70,8 @@ class ConferenceServiceImplTest {
         when(jwtUtil.extractUserId(TOKEN)).thenReturn(ORGANIZER_ID);
         when(jwtUtil.extractName(TOKEN)).thenReturn(ORGANIZER_NAME);
         when(videoSDKService.createRoom()).thenThrow(new RuntimeException("down"));
-        assertThrows(BadRequestException.class, () -> service.createConference(new CreateConferenceRequest(), TOKEN));
+        CreateConferenceRequest req = new CreateConferenceRequest();
+        assertThrows(BadRequestException.class, () -> service.createConference(req, TOKEN));
     }
 
     @Test void startConference_success() {

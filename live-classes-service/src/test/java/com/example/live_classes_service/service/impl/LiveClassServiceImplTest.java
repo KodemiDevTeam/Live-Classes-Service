@@ -78,8 +78,9 @@ class LiveClassServiceImplTest {
     @Test
     void createLiveClass_notTrainer_throwsUnauthorized() {
         when(jwtUtil.extractRole(TOKEN)).thenReturn("LEARNER");
+        CreateLiveClassRequest req = new CreateLiveClassRequest();
         assertThrows(UnauthorizedException.class,
-                () -> service.createLiveClass(new CreateLiveClassRequest(), TOKEN));
+                () -> service.createLiveClass(req, TOKEN));
         verify(repository, never()).save(any());
     }
 
@@ -89,9 +90,9 @@ class LiveClassServiceImplTest {
         when(jwtUtil.extractUserId(TOKEN)).thenReturn(TRAINER_ID);
         when(jwtUtil.extractName(TOKEN)).thenReturn(TRAINER_NAME);
         when(videoSDKService.createRoom()).thenThrow(new RuntimeException("API down"));
-
+        CreateLiveClassRequest req = new CreateLiveClassRequest();
         assertThrows(BadRequestException.class,
-                () -> service.createLiveClass(new CreateLiveClassRequest(), TOKEN));
+                () -> service.createLiveClass(req, TOKEN));
     }
 
     // ── startLiveClass ───────────────────────────────────────────────────────
