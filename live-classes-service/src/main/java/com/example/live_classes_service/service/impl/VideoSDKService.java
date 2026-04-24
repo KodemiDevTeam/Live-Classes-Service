@@ -1,11 +1,11 @@
 package com.example.live_classes_service.service.impl;
 
-import com.example.live_classes_service.exception.NullBodyException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -13,16 +13,14 @@ import org.springframework.web.client.RestTemplate;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+
+
 @Slf4j
 @Service
 public class VideoSDKService {
 
-    private static final String RECORDINGS_START_PATH = "/recordings/start";
-    private static final String RECORDINGS_STOP_PATH = "/recordings/stop";
-    private static final String ROOMS_PATH = "/rooms";
-    private static final String ROOMS_DEACTIVATE_PATH = "/rooms/deactivate";
-    private static final String ROOMS_VALIDATE_PATH = "/rooms/validate/";
-    private static final String AUTHORIZATION_HEADER = "Authorization";
+    private static final String AUTHORIZATION = "Authorization";
+    private static final String ROOM_ID = "roomId";
 
     @Value("${videosdk.api.key}")
     private String apiKey;
@@ -73,19 +71,21 @@ public class VideoSDKService {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set(AUTHORIZATION_HEADER, token);
+        headers.set(AUTHORIZATION, token);
 
         HttpEntity<String> request = new HttpEntity<>("{}", headers);
 
-        ResponseEntity<Map> response = restTemplate.postForEntity(
-                apiEndpoint + ROOMS_PATH, request, Map.class);
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                apiEndpoint + "/rooms", HttpMethod.POST, request,
+                new ParameterizedTypeReference<Map<String, Object>>() {});
 
         Map<String, Object> body = response.getBody();
+
         if (body == null) {
-            throw new NullBodyException("VideoSDK createRoom returned null body");
+            throw new IllegalStateException("Empty response body from VideoSDK createRoom");
         }
 
-        String roomId = (String) body.get("roomId");
+        String roomId = (String) body.get(ROOM_ID);
 
         log.info("VideoSDK room created: {}", roomId);
 
@@ -97,14 +97,14 @@ public class VideoSDKService {
         String token = generateToken();
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set(AUTHORIZATION_HEADER, token);
+        headers.set(AUTHORIZATION, token);
 
         HttpEntity<Void> request = new HttpEntity<>(headers);
 
         try {
 
             restTemplate.exchange(
-                    apiEndpoint + ROOMS_VALIDATE_PATH + roomId,
+                    apiEndpoint + "/rooms/validate/" + roomId,
                     HttpMethod.GET,
                     request,
                     Map.class
@@ -126,7 +126,7 @@ public class VideoSDKService {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set(AUTHORIZATION_HEADER, token);
+        headers.set(AUTHORIZATION, token);
 
         Map<String, Object> storageConfig = new HashMap<>();
         storageConfig.put("type", "s3");
@@ -143,17 +143,19 @@ public class VideoSDKService {
         config.put("storage", storageConfig);
 
         Map<String, Object> body = new HashMap<>();
-        body.put("roomId", roomId);
+        body.put(ROOM_ID, roomId);
         body.put("config", config);
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 
-        ResponseEntity<Map> response = restTemplate.postForEntity(
-                apiEndpoint + RECORDINGS_START_PATH, request, Map.class);
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                apiEndpoint + "/recordings/start", HttpMethod.POST, request,
+                new ParameterizedTypeReference<Map<String, Object>>() {});
 
         Map<String, Object> responseBody = response.getBody();
+
         if (responseBody == null) {
-            throw new NullBodyException("VideoSDK startRecording returned null body");
+            throw new IllegalStateException("Empty response body from VideoSDK startRecording");
         }
 
         String recordingId = (String) responseBody.get("id");
@@ -169,15 +171,15 @@ public class VideoSDKService {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set(AUTHORIZATION_HEADER, token);
+        headers.set(AUTHORIZATION, token);
 
         Map<String, Object> body = new HashMap<>();
-        body.put("roomId", roomId);
+        body.put(ROOM_ID, roomId);
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 
         restTemplate.postForEntity(
-                apiEndpoint + RECORDINGS_STOP_PATH, request, Map.class);
+                apiEndpoint + "/recordings/stop", request, Map.class);
 
         log.info("Recording stop requested for room {}", roomId);
     }
@@ -188,15 +190,15 @@ public class VideoSDKService {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set(AUTHORIZATION_HEADER, token);
+        headers.set(AUTHORIZATION, token);
 
         Map<String, Object> body = new HashMap<>();
-        body.put("roomId", roomId);
+        body.put(ROOM_ID, roomId);
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 
         restTemplate.postForEntity(
-                apiEndpoint + ROOMS_DEACTIVATE_PATH, request, Map.class);
+                apiEndpoint + "/rooms/deactivate", request, Map.class);
 
         log.info("Room ended {}", roomId);
     }

@@ -52,7 +52,7 @@ public class LiveClassServiceImpl implements LiveClassService {
         String trainerId = jwtUtil.extractUserId(token);
         String trainerName = jwtUtil.extractName(token);
 
-        String roomId = retry(() -> videoSDKService.createRoom());
+        String roomId = retry(videoSDKService::createRoom);
 
         LiveClassEntity entity = LiveClassEntity.builder()
                 .liveClassId(UUID.randomUUID().toString())

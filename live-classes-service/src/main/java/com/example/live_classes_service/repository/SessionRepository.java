@@ -3,6 +3,7 @@ package com.example.live_classes_service.repository;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.*;
 import com.amazonaws.services.dynamodbv2.model.*;
+import com.example.live_classes_service.exception.BadRequestException;
 import com.example.live_classes_service.model.SessionEntity;
 
 import lombok.extern.slf4j.Slf4j;
@@ -78,9 +79,9 @@ public class SessionRepository {
         } catch (ConditionalCheckFailedException e) {
             log.warn("Atomic update failed (already updated): {}", sessionId);
             return false;
-        } catch (com.amazonaws.services.dynamodbv2.model.AmazonDynamoDBException e) {
-            log.error("DynamoDB update failed for sessionId: {}", sessionId, e);
-            throw new com.example.live_classes_service.exception.BadRequestException("Database update failed: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("DynamoDB update failed", e);
+            throw new BadRequestException("Database update failed");
         }
     }
 

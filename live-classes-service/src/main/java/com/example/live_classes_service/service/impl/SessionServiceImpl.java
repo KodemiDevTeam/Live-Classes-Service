@@ -51,7 +51,7 @@ public class SessionServiceImpl implements SessionService {
         String organizerId = jwtUtil.extractUserId(token);
         String organizerName = jwtUtil.extractName(token);
 
-        String roomId = retry(() -> videoSDKService.createRoom());
+        String roomId = retry(videoSDKService::createRoom);
 
         SessionEntity entity = SessionEntity.builder()
                 .sessionId(UUID.randomUUID().toString())

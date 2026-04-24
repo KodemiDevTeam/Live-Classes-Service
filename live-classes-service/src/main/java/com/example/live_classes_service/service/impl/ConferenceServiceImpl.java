@@ -78,10 +78,10 @@ public class ConferenceServiceImpl implements ConferenceService {
         if (request == null) throw new NullBodyException("Request body cannot be null");
 
         String organizerId = extractUserIdOrThrow(token);
-        log.debug("Creating conference for organizerId={}", organizerId);
+        log.info("Creating conference for organizer: {}", organizerId);
         String organizerName = extractUserName(token);
 
-        String roomId = retry(() -> videoSDKService.createRoom());
+        String roomId = retry(videoSDKService::createRoom);
 
         ConferenceEntity entity = ConferenceEntity.builder()
                 .conferenceId(UUID.randomUUID().toString())
@@ -243,12 +243,8 @@ public class ConferenceServiceImpl implements ConferenceService {
                     throw new BadRequestException("User not enrolled");
                 }
 
-            } catch (BadRequestException e) {
-                throw e;
-            } catch (UnauthorizedException e) {
-                throw e;
-            } catch (feign.FeignException e) {
-                log.error("Enrollment check failed for conferenceId={}", entity.getConferenceId(), e);
+            } catch (Exception e) {
+                log.error("Enrollment check failed", e);
                 throw new BadRequestException("Enrollment validation failed");
             }
             return;
