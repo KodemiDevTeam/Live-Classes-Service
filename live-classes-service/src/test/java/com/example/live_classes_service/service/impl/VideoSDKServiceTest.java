@@ -1,6 +1,4 @@
 package com.example.live_classes_service.service.impl;
-
-import com.example.live_classes_service.exception.NullBodyException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
