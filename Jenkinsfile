@@ -28,30 +28,9 @@ pipeline {
 
         /* ================= CHECKOUT ================= */
 
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
                 checkout scm
-            }
-        }
-
-        /* ================= TRIGGER INFO ================= */
-
-        stage('Trigger Info') {
-            steps {
-                echo "Build triggered by: ${currentBuild.getBuildCauses()}"
-            }
-        }
-
-        /* ================= DEBUG ================= */
-
-        stage('Debug Workspace') {
-            steps {
-                sh '''
-                    echo "===== WORKSPACE DEBUG ====="
-                    pwd
-                    ls -la
-                    find . -name pom.xml
-                '''
             }
         }
 
@@ -60,33 +39,31 @@ pipeline {
         stage('Build & Test (with Coverage)') {
             steps {
                 dir('live-classes-service') {
-                    catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                        sh '''
-                            echo "===== BUILD + TEST ====="
-
-                            mvn clean verify \
-                            -Deureka.client.enabled=false \
-                            -Dspring.cloud.discovery.enabled=false
-                        '''
-                    }
-                }
-            }
-        }
-
-        /* ================= CHECK JACOCO ================= */
-
-        stage('Check JaCoCo Report') {
-            steps {
-                dir('live-classes-service') {
                     sh '''
-                        echo "===== CHECKING JACOCO ====="
-                        ls -la target/site/jacoco || echo "JaCoCo NOT FOUND"
+                        echo "===== BUILD + TEST ====="
+
+                        mvn clean verify \
+                        -Deureka.client.enabled=false \
+                        -Dspring.cloud.discovery.enabled=false
                     '''
                 }
             }
         }
 
-        /* ================= SONAR ================= */
+        /* ================= VERIFY JACOCO ================= */
+
+        stage('Verify Coverage Report') {
+            steps {
+                dir('live-classes-service') {
+                    sh '''
+                        echo "===== VERIFYING JACOCO ====="
+                        test -f target/site/jacoco/jacoco.xml && echo "JaCoCo report found" || (echo "JaCoCo report missing" && exit 1)
+                    '''
+                }
+            }
+        }
+
+        /* ================= SONAR ANALYSIS ================= */
 
         stage('SonarQube Analysis') {
             steps {
@@ -101,7 +78,8 @@ pipeline {
                                 -Dsonar.projectName=$SONAR_PROJECT_NAME \
                                 -Dsonar.login=$SONAR_TOKEN \
                                 -Dsonar.java.binaries=target/classes \
-                                -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                                -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+                                -Dsonar.qualitygate.wait=true
                             '''
                         }
                     }
@@ -113,8 +91,13 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: false
+                timeout(time: 10, unit: 'MINUTES') {
+                    script {
+                        def qg = waitForQualityGate()
+                        if (qg.status != 'OK') {
+                            error "❌ Pipeline failed due to Quality Gate: ${qg.status}"
+                        }
+                    }
                 }
             }
         }
@@ -126,9 +109,7 @@ pipeline {
                 dir('live-classes-service') {
                     withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_KEY')]) {
 
-                        sh '''
-                            echo "===== RUNNING OWASP CHECK ====="
-                        '''
+                        sh 'echo "===== RUNNING OWASP DEPENDENCY CHECK ====="'
 
                         dependencyCheck(
                             additionalArguments: "--nvdApiKey ${NVD_KEY} --format XML --out . --disableOssIndex",
@@ -147,8 +128,8 @@ pipeline {
             steps {
                 archiveArtifacts artifacts: 'live-classes-service/dependency-check-report.xml',
                                  fingerprint: true
-                                 
-                junit allowEmptyResults: true, 
+
+                junit allowEmptyResults: true,
                       testResults: 'live-classes-service/target/surefire-reports/*.xml'
             }
         }
@@ -156,16 +137,16 @@ pipeline {
 
     post {
         success {
-            echo 'SUCCESS: Build + Tests + Sonar + OWASP completed'
+            echo '✅ SUCCESS: Build, Test, Sonar & Security checks passed'
         }
         unstable {
-            echo 'UNSTABLE: Tests failed or Quality Gate not passed'
+            echo '⚠️ UNSTABLE: Check Quality Gate or test results'
         }
         failure {
-            echo 'FAILED: Check logs'
+            echo '❌ FAILED: Pipeline execution failed'
         }
         always {
-            echo 'Pipeline execution finished'
+            echo '📌 Pipeline execution completed'
         }
     }
 }
