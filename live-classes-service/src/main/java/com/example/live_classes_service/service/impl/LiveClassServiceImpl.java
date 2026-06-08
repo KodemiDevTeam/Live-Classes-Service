@@ -52,7 +52,12 @@ public class LiveClassServiceImpl implements LiveClassService {
         String trainerId = jwtUtil.extractUserId(token);
         String trainerName = jwtUtil.extractName(token);
 
-        String roomId = retry(videoSDKService::createRoom);
+        String roomId = retry(new Supplier<String>() {
+            @Override
+            public String get() {
+                return videoSDKService.createRoom();
+            }
+        });
 
         LiveClassEntity entity = LiveClassEntity.builder()
                 .liveClassId(UUID.randomUUID().toString())
@@ -134,10 +139,12 @@ public class LiveClassServiceImpl implements LiveClassService {
     @Override
     public List<LiveClassResponseDTO> getLiveClassesByCourse(String courseId) {
 
-        return repository.findByCourseId(courseId)
-                .stream()
-                .map(this::mapToResponse)
-                .toList();
+        List<LiveClassEntity> entities = repository.findByCourseId(courseId);
+        List<LiveClassResponseDTO> dtos = new java.util.ArrayList<LiveClassResponseDTO>();
+        for (LiveClassEntity entity : entities) {
+            dtos.add(mapToResponse(entity));
+        }
+        return dtos;
     }
 
 
@@ -149,7 +156,13 @@ public class LiveClassServiceImpl implements LiveClassService {
         String userId = jwtUtil.extractUserId(token);
         validateTrainer(entity, userId);
 
-        String recordingId = retry(() -> videoSDKService.startRecording(entity.getRoomId()));
+        final LiveClassEntity finalEntity = entity;
+        String recordingId = retry(new Supplier<String>() {
+            @Override
+            public String get() {
+                return videoSDKService.startRecording(finalEntity.getRoomId());
+            }
+        });
 
         entity.setIsRecording(true);
         entity.setRecordingUrl(recordingId);

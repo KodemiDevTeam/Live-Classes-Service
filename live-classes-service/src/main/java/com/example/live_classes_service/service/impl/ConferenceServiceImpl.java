@@ -81,7 +81,12 @@ public class ConferenceServiceImpl implements ConferenceService {
         log.info("Creating conference for organizer: {}", organizerId);
         String organizerName = extractUserName(token);
 
-        String roomId = retry(videoSDKService::createRoom);
+        String roomId = retry(new Supplier<String>() {
+            @Override
+            public String get() {
+                return videoSDKService.createRoom();
+            }
+        });
 
         ConferenceEntity entity = ConferenceEntity.builder()
                 .conferenceId(UUID.randomUUID().toString())
@@ -165,7 +170,13 @@ public class ConferenceServiceImpl implements ConferenceService {
         String userId = extractUserIdOrThrow(token);
         validateOrganizer(entity, userId);
 
-        String recordingId = retry(() -> videoSDKService.startRecording(entity.getRoomId()));
+        final ConferenceEntity finalEntity = entity;
+        String recordingId = retry(new Supplier<String>() {
+            @Override
+            public String get() {
+                return videoSDKService.startRecording(finalEntity.getRoomId());
+            }
+        });
 
         entity.setIsRecording(true);
         entity.setRecordingUrl(recordingId);

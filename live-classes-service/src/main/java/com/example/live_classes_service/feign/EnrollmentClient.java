@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 
-@FeignClient(name = "enrollment-progress-service")
+@FeignClient(name = "enrollment-progress-service", fallbackFactory = EnrollmentClientFallbackFactory.class)
 public interface EnrollmentClient {
 
     @GetMapping("/api/v1/enrollment/status/{courseId}")
