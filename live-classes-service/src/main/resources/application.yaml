@@ -50,12 +50,12 @@ eureka:
     prefer-ip-address: true
 
 jwt:
-  secret: k8Jd9wQ2x+4aB3d1FJtL8vZ5X0yQ1V7n2gHqM4sP1tE=
+  secret: ${JWT_SECRET:}
 
 videosdk:
   api:
     key: 9ea012b4-b6ff-4c9d-b7e1-644117bf5c94
-    secret: 9091eade668321ecef4216ebd0516761742da5108f12caf5be4f206b2f58ae65
+    secret: ${VIDEOSDK_SECRET:}
     endpoint: https://api.videosdk.live/v2
 
 aws:
