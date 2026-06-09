@@ -44,6 +44,13 @@ class VideoSDKServiceTest {
     }
 
     @Test
+    void generateToken_hasThreeParts() {
+        // JWT format: header.payload.signature
+        String token = service.generateToken();
+        assertEquals(3, token.split("\\.").length);
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     void createRoom_success() {
         ResponseEntity<Map<String, Object>> response = ResponseEntity.ok(Map.of("roomId", "room-123"));

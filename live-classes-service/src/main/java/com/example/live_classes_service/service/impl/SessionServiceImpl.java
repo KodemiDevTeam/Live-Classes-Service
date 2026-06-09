@@ -51,12 +51,7 @@ public class SessionServiceImpl implements SessionService {
         String organizerId = jwtUtil.extractUserId(token);
         String organizerName = jwtUtil.extractName(token);
 
-        String roomId = retry(new Supplier<String>() {
-            @Override
-            public String get() {
-                return videoSDKService.createRoom();
-            }
-        });
+        String roomId = retry(videoSDKService::createRoom);
 
         SessionEntity entity = SessionEntity.builder()
                 .sessionId(UUID.randomUUID().toString())
@@ -149,12 +144,7 @@ public class SessionServiceImpl implements SessionService {
         validateOrganizer(entity, userId);
 
         final SessionEntity finalEntity = entity;
-        String recordingId = retry(new Supplier<String>() {
-            @Override
-            public String get() {
-                return videoSDKService.startRecording(finalEntity.getRoomId());
-            }
-        });
+        String recordingId = retry(() -> videoSDKService.startRecording(finalEntity.getRoomId()));
 
         entity.setIsRecording(true);
         entity.setRecordingUrl(recordingId);

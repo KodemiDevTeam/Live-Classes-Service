@@ -229,6 +229,17 @@ class LiveClassServiceImplTest {
         assertThrows(UnauthorizedException.class, () -> service.joinLiveClass(LIVE_CLASS_ID, TOKEN));
     }
 
+    @Test
+    void joinLiveClass_asLearner_feignException_throwsBadRequest() {
+        entity.setStatus("LIVE_STARTED");
+        when(repository.findById(LIVE_CLASS_ID)).thenReturn(entity);
+        when(jwtUtil.extractUserId(TOKEN)).thenReturn("learner-001");
+        when(jwtUtil.extractRole(TOKEN)).thenReturn("LEARNER");
+        when(enrollmentClient.getEnrollmentStatus(COURSE_ID, TOKEN))
+                .thenThrow(feign.FeignException.class);
+        assertThrows(BadRequestException.class, () -> service.joinLiveClass(LIVE_CLASS_ID, TOKEN));
+    }
+
     // ── getLiveClassesByCourse ───────────────────────────────────────────────
 
     @Test

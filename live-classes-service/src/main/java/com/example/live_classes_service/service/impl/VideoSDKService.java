@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.*;
 
 
@@ -47,7 +48,7 @@ public class VideoSDKService {
 
     public String generateToken() {
 
-        long now = System.currentTimeMillis();
+        Instant now = Instant.now();
 
         Map<String, Object> claims = new HashMap<>();
         claims.put("apikey", apiKey);
@@ -56,8 +57,8 @@ public class VideoSDKService {
 
         return Jwts.builder()
                 .setClaims(claims)
-                .setIssuedAt(new Date(now))
-                .setExpiration(new Date(now + 24 * 60 * 60 * 1000))
+                .setIssuedAt(Date.from(now))
+                .setExpiration(Date.from(now.plusSeconds(24 * 60 * 60)))
                 .signWith(
                         Keys.hmacShaKeyFor(apiSecret.getBytes(StandardCharsets.UTF_8)),
                         SignatureAlgorithm.HS256
