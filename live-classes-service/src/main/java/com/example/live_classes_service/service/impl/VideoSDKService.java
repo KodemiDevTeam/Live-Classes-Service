@@ -58,7 +58,7 @@ public class VideoSDKService {
         return Jwts.builder()
                 .setClaims(claims)
                 .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(now.plusSeconds(24 * 60 * 60)))
+                .setExpiration(Date.from(now.plusSeconds(24L * 60 * 60)))
                 .signWith(
                         Keys.hmacShaKeyFor(apiSecret.getBytes(StandardCharsets.UTF_8)),
                         SignatureAlgorithm.HS256
