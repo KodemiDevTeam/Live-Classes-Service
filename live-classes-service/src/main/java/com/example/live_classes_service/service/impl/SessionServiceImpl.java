@@ -39,6 +39,7 @@ public class SessionServiceImpl implements SessionService {
 
     private static final String ACTION_CREATED = "CREATED";
     private static final String ACTION_STARTED = "STARTED";
+    private static final String ACTION_ENDED = "ENDED";
 
     @Override
     public SessionResponseDTO createSession(CreateSessionRequest request, String token) {
@@ -101,7 +102,8 @@ public class SessionServiceImpl implements SessionService {
                 STATUS_SCHEDULED,
                 STATUS_STARTED,
                 "startedAt",
-                startedAt
+                startedAt,
+                ACTION_STARTED
         );
 
         if (!updated) {
@@ -195,6 +197,7 @@ public class SessionServiceImpl implements SessionService {
 
         entity.setStatus(STATUS_ENDED);
         entity.setEndedAt(Instant.now().toString());
+        entity.setActionType(ACTION_ENDED);
 
         repository.save(entity);
         log.info("Session ended: {}", sessionId);

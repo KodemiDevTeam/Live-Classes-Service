@@ -85,7 +85,7 @@ class SessionServiceImplTest {
         when(repository.findById(SESSION_ID)).thenReturn(entity);
         when(jwtUtil.extractUserId(TOKEN)).thenReturn(ORGANIZER_ID);
         when(jwtUtil.extractName(TOKEN)).thenReturn(ORGANIZER_NAME);
-        when(repository.updateStatusAtomically(eq(SESSION_ID), eq("SCHEDULED"), eq("SESSION_STARTED"), eq("startedAt"), anyString())).thenReturn(true);
+        when(repository.updateStatusAtomically(eq(SESSION_ID), eq("SCHEDULED"), eq("SESSION_STARTED"), eq("startedAt"), anyString(), anyString())).thenReturn(true);
         SessionResponseDTO result = service.startSession(SESSION_ID, TOKEN);
         assertNotNull(result);
         assertEquals("SESSION_STARTED", result.getStatus());
@@ -112,7 +112,7 @@ class SessionServiceImplTest {
         when(repository.findById(SESSION_ID)).thenReturn(entity);
         when(jwtUtil.extractUserId(TOKEN)).thenReturn(ORGANIZER_ID);
         when(jwtUtil.extractName(TOKEN)).thenReturn(ORGANIZER_NAME);
-        when(repository.updateStatusAtomically(eq(SESSION_ID), eq("SCHEDULED"), eq("SESSION_STARTED"), eq("startedAt"), anyString())).thenReturn(false);
+        when(repository.updateStatusAtomically(eq(SESSION_ID), eq("SCHEDULED"), eq("SESSION_STARTED"), eq("startedAt"), anyString(), anyString())).thenReturn(false);
         assertNotNull(service.startSession(SESSION_ID, TOKEN));
     }
 

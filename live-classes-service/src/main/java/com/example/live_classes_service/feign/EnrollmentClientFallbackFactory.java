@@ -15,8 +15,8 @@ public class EnrollmentClientFallbackFactory implements FallbackFactory<Enrollme
     public EnrollmentClient create(Throwable cause) {
         return new EnrollmentClient() {
             @Override
-            public EnrollmentStatusResponse getEnrollmentStatus(String courseId, String token) {
-                log.error("Downstream Enrollment Service failure during getEnrollmentStatus for courseId={}. Cause: {}", 
+            public SessionStatusResponse getCourseEnrollmentStatus(String courseId, String token) {
+                log.error("Downstream Enrollment Service failure during getCourseEnrollmentStatus for courseId={}. Cause: {}", 
                         courseId, cause.getMessage(), cause);
                 throw new EnrollmentServiceException("Enrollment service is currently unavailable. Access denied.", cause);
             }
@@ -33,6 +33,13 @@ public class EnrollmentClientFallbackFactory implements FallbackFactory<Enrollme
                 log.error("Downstream Enrollment Service failure during getConferenceEnrollmentStatus for conferenceId={}. Cause: {}", 
                         conferenceId, cause.getMessage(), cause);
                 throw new EnrollmentServiceException("Enrollment service is currently unavailable. Access denied.", cause);
+            }
+
+            @Override
+            public java.util.List<String> getEnrolledLearners(String courseId) {
+                log.error("Downstream Enrollment Service failure during getEnrolledLearners for courseId={}. Cause: {}",
+                        courseId, cause.getMessage(), cause);
+                return java.util.Collections.emptyList();
             }
         };
     }

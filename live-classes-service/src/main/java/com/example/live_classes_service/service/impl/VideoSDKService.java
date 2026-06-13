@@ -128,41 +128,57 @@ public class VideoSDKService {
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set(AUTHORIZATION, token);
 
+        // S3 storage config must be flat inside "storage", not nested under "config"
         Map<String, Object> storageConfig = new HashMap<>();
         storageConfig.put("type", "s3");
-
-        Map<String, String> s3Config = new HashMap<>();
-        s3Config.put("accessKey", s3AccessKey);
-        s3Config.put("secretKey", s3SecretKey);
-        s3Config.put("bucket", s3Bucket);
-        s3Config.put("region", s3Region);
-
-        storageConfig.put("config", s3Config);
+        storageConfig.put("accessKey", s3AccessKey);
+        storageConfig.put("secretKey", s3SecretKey);
+        storageConfig.put("bucket", s3Bucket);
+        storageConfig.put("region", s3Region);
 
         Map<String, Object> config = new HashMap<>();
         config.put("storage", storageConfig);
+
+        // VideoSDK requires layout config
+        Map<String, Object> layoutConfig = new HashMap<>();
+        layoutConfig.put("type", "GRID");
+        layoutConfig.put("priority", "SPEAKER");
+        layoutConfig.put("gridSize", 4);
+        config.put("layout", layoutConfig);
 
         Map<String, Object> body = new HashMap<>();
         body.put(ROOM_ID, roomId);
         body.put("config", config);
 
+        log.info("Starting recording for roomId={} with bucket={} region={}", roomId, s3Bucket, s3Region);
+
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 
-        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
-                apiEndpoint + "/recordings/start", HttpMethod.POST, request,
-                new ParameterizedTypeReference<Map<String, Object>>() {});
+        try {
+            // Use String response to avoid deserialization issues with VideoSDK response format
+            ResponseEntity<String> response = restTemplate.exchange(
+                    apiEndpoint + "/recordings/start", HttpMethod.POST, request,
+                    String.class);
 
-        Map<String, Object> responseBody = response.getBody();
+            String responseBody = response.getBody();
+            log.info("VideoSDK startRecording raw response | roomId={} | body={}", roomId, responseBody);
 
-        if (responseBody == null) {
-            throw new IllegalStateException("Empty response body from VideoSDK startRecording");
+            if (responseBody == null) {
+                throw new IllegalStateException("Empty response body from VideoSDK startRecording");
+            }
+
+            // Parse the recording ID from JSON response
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            com.fasterxml.jackson.databind.JsonNode jsonNode = mapper.readTree(responseBody);
+            String recordingId = jsonNode.has("id") ? jsonNode.get("id").asText() : "unknown";
+
+            log.info("Recording started | recordingId={} | roomId={}", recordingId, roomId);
+
+            return recordingId;
+        } catch (Exception e) {
+            log.error("VideoSDK startRecording failed | roomId={} | error={}", roomId, e.getMessage(), e);
+            throw new RuntimeException("Failed to start recording: " + e.getMessage(), e);
         }
-
-        String recordingId = (String) responseBody.get("id");
-
-        log.info("Recording started {}", recordingId);
-
-        return recordingId;
     }
 
     public void stopRecording(String roomId) {
@@ -178,10 +194,16 @@ public class VideoSDKService {
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 
-        restTemplate.postForEntity(
-                apiEndpoint + "/recordings/stop", request, Map.class);
+        log.info("Stopping recording | roomId={}", roomId);
 
-        log.info("Recording stop requested for room {}", roomId);
+        try {
+            restTemplate.postForEntity(
+                    apiEndpoint + "/recordings/end", request, String.class);
+            log.info("Recording stopped | roomId={}", roomId);
+        } catch (Exception e) {
+            log.error("VideoSDK stopRecording failed | roomId={} | error={}", roomId, e.getMessage(), e);
+            throw new RuntimeException("Failed to stop recording: " + e.getMessage(), e);
+        }
     }
 
     public void endRoom(String roomId) {

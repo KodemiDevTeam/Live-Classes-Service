@@ -20,9 +20,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +42,8 @@ public class ConferenceServiceImpl implements ConferenceService {
     private static final String ROLE_TRAINER = "TRAINER";
     private static final String ROLE_LEARNER = "LEARNER";
     private static final String ACTION_CREATED = "CREATED";
+    private static final String ACTION_STARTED = "STARTED";
+    private static final String ACTION_ENDED = "ENDED";
 
     private String extractUserIdOrThrow(String token) {
         if (token == null || token.isBlank()) {
@@ -102,10 +106,15 @@ public class ConferenceServiceImpl implements ConferenceService {
                 .maxParticipants(request.getMaxParticipants())
                 .isRecording(false)
                 .createdAt(Instant.now().toString())
+                .courseId(request.getCourseId())
+                .moduleId(request.getModuleId())
+                .lessonId(request.getLessonId())
+                .sourceType(request.getSourceType())
                 .build();
 
         repository.save(entity);
         log.info("Conference created: {}", entity.getConferenceId());
+        log.info("Conference created sourceType={}, courseId={}, conferenceId={}", request.getSourceType(), request.getCourseId(), entity.getConferenceId());
 
         return mapToResponse(entity);
     }
@@ -126,7 +135,7 @@ public class ConferenceServiceImpl implements ConferenceService {
         }
 
         String startedAt = Instant.now().toString();
-        boolean updated = repository.updateStatusIfNotStarted(conferenceId, startedAt);
+        boolean updated = repository.updateStatusIfNotStarted(conferenceId, startedAt, ACTION_STARTED);
 
         if (!updated) {
             throw new BadRequestException("Conference already started");
@@ -134,6 +143,7 @@ public class ConferenceServiceImpl implements ConferenceService {
 
         entity.setStatus(STATUS_STARTED);
         entity.setStartedAt(startedAt);
+        entity.setActionType(ACTION_STARTED);
 
         log.info("Conference started: {}", conferenceId);
 
@@ -212,6 +222,7 @@ public class ConferenceServiceImpl implements ConferenceService {
 
         entity.setStatus(STATUS_ENDED);
         entity.setEndedAt(Instant.now().toString());
+        entity.setActionType(ACTION_ENDED);
 
         repository.save(entity);
 
@@ -246,14 +257,31 @@ public class ConferenceServiceImpl implements ConferenceService {
         }
 
         if (ROLE_LEARNER.equals(role)) {
+            log.info("Join validation conferenceId={}, sourceType={}, courseId={}, role={}", entity.getConferenceId(), entity.getSourceType(), entity.getCourseId(), role);
             try {
+                boolean isLiveCourseConference =
+                        (entity.getCourseId() != null && !entity.getCourseId().isBlank()) || 
+                        "LIVE_COURSE".equals(entity.getSourceType());
+
+                if (isLiveCourseConference) {
+                    SessionStatusResponse status =
+                            enrollmentClient.getCourseEnrollmentStatus(entity.getCourseId(), token);
+            
+                    if (status == null || !status.isEnrolled()) {
+                        throw new BadRequestException("User not enrolled in this live course");
+                    }
+                    return;
+                }
+
                 SessionStatusResponse status =
                         enrollmentClient.getConferenceEnrollmentStatus(entity.getConferenceId(), token);
 
                 if (status == null || !status.isEnrolled()) {
-                    throw new BadRequestException("User not enrolled");
+                    throw new BadRequestException("User not enrolled in this conference");
                 }
 
+            } catch (BadRequestException e) {
+                throw e;
             } catch (Exception e) {
                 log.error("Enrollment check failed", e);
                 throw new BadRequestException("Enrollment validation failed");
@@ -284,7 +312,41 @@ public class ConferenceServiceImpl implements ConferenceService {
                 .startedAt(entity.getStartedAt())
                 .maxParticipants(entity.getMaxParticipants())
                 .isRecording(entity.getIsRecording())
+                .courseId(entity.getCourseId())
+                .sourceType(entity.getSourceType())
                 .build();
+    }
+
+    @Override
+    public List<ConferenceResponseDTO> getConferencesByOrganizer(String token) {
+        String organizerId = extractUserIdOrThrow(token);
+        log.info("Fetching conferences for organizer: {}", organizerId);
+
+        List<ConferenceEntity> entities = repository.findByOrganizerId(organizerId);
+        log.info("Found {} conferences for organizer: {}", entities.size(), organizerId);
+
+        return entities.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ConferenceResponseDTO> getAllConferences() {
+        log.info("Fetching all conferences");
+
+        List<ConferenceEntity> entities = repository.findAll();
+        log.info("Found {} total conferences", entities.size());
+
+        return entities.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public ConferenceResponseDTO getConference(String conferenceId) {
+        log.info("Fetching conference: {}", conferenceId);
+        ConferenceEntity entity = getConferenceOrThrow(conferenceId);
+        return mapToResponse(entity);
     }
 
     private <T> T retry(Supplier<T> action) {

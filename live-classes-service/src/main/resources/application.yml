@@ -1,5 +1,5 @@
 server:
-  port: 8095
+  port: ${SERVER_PORT:8095}
 
 spring:
   application:
@@ -40,27 +40,27 @@ resilience4j:
         baseConfig: default
 
 dynamodb:
-  region: eu-north-1
+  region: ${AWS_REGION}
 
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_URL}
   instance:
     prefer-ip-address: true
 
 jwt:
-  secret: ${JWT_SECRET:}
+  secret: ${JWT_SECRET}
 
 videosdk:
   api:
-    key: 9ea012b4-b6ff-4c9d-b7e1-644117bf5c94
-    secret: ${VIDEOSDK_SECRET:}
-    endpoint: https://api.videosdk.live/v2
+    key: ${VIDEOSDK_API_KEY}
+    secret: ${VIDEOSDK_API_SECRET}
+    endpoint: ${VIDEOSDK_API_ENDPOINT:https://api.videosdk.live/v2}
 
 aws:
   s3:
-    bucket: kodemilabs-recordings
-    region: eu-north-1
-    accessKey: ${AWS_ACCESS_KEY_ID:}
-    secretKey: ${AWS_SECRET_ACCESS_KEY:}
+    bucket: ${S3_BUCKET_NAME}
+    region: ${AWS_REGION}
+    accessKey: ${AWS_ACCESS_KEY_ID}
+    secretKey: ${AWS_SECRET_ACCESS_KEY}

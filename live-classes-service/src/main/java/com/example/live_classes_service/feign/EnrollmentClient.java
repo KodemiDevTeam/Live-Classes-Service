@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 @FeignClient(name = "enrollment-progress-service", fallbackFactory = EnrollmentClientFallbackFactory.class)
 public interface EnrollmentClient {
 
-    @GetMapping("/api/v1/enrollment/status/{courseId}")
-    EnrollmentStatusResponse getEnrollmentStatus(
+    @GetMapping("/api/v1/enrollment/course/{courseId}/status")
+    SessionStatusResponse getCourseEnrollmentStatus(
             @PathVariable("courseId") String courseId,
             @RequestHeader("Authorization") String token
     );
@@ -20,6 +20,9 @@ public interface EnrollmentClient {
                                                      @RequestHeader("Authorization") String token);
 
     @GetMapping("/api/v1/enrollments/conference/{conferenceId}/status")
-    SessionStatusResponse getConferenceEnrollmentStatus(@PathVariable String conferenceId,
+    SessionStatusResponse getConferenceEnrollmentStatus(@PathVariable("conferenceId") String conferenceId,
                                                      @RequestHeader("Authorization") String token);
+
+    @GetMapping("/api/v1/enrollments/internal/course/{courseId}/learners")
+    java.util.List<String> getEnrolledLearners(@PathVariable("courseId") String courseId);
 }

@@ -60,7 +60,7 @@ class SessionRepositoryTest {
         when(amazonDynamoDB.updateItem(any(UpdateItemRequest.class)))
                 .thenReturn(new UpdateItemResult());
         assertTrue(repository.updateStatusAtomically(
-                "session-001", "SCHEDULED", "SESSION_STARTED", "startedAt", "2026-05-01T10:00:00Z"));
+                "session-001", "SCHEDULED", "SESSION_STARTED", "startedAt", "2026-05-01T10:00:00Z", "STARTED"));
     }
 
     @Test
@@ -68,7 +68,7 @@ class SessionRepositoryTest {
         when(amazonDynamoDB.updateItem(any(UpdateItemRequest.class)))
                 .thenThrow(new ConditionalCheckFailedException("already updated"));
         assertFalse(repository.updateStatusAtomically(
-                "session-001", "SCHEDULED", "SESSION_STARTED", "startedAt", "2026-05-01T10:00:00Z"));
+                "session-001", "SCHEDULED", "SESSION_STARTED", "startedAt", "2026-05-01T10:00:00Z", "STARTED"));
     }
 
     @Test
@@ -77,7 +77,7 @@ class SessionRepositoryTest {
                 .thenThrow(new RuntimeException("DB error"));
         assertThrows(BadRequestException.class, () ->
                 repository.updateStatusAtomically(
-                        "session-001", "SCHEDULED", "SESSION_STARTED", "startedAt", "2026-05-01T10:00:00Z"));
+                        "session-001", "SCHEDULED", "SESSION_STARTED", "startedAt", "2026-05-01T10:00:00Z", "STARTED"));
     }
 
     @Test

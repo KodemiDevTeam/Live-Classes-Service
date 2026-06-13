@@ -78,25 +78,25 @@ class VideoSDKServiceTest {
     @Test
     @SuppressWarnings("unchecked")
     void startRecording_success() {
-        ResponseEntity<Map<String, Object>> response = ResponseEntity.ok(Map.of("id", "rec-123"));
+        ResponseEntity<String> response = ResponseEntity.ok("{\"id\": \"rec-123\"}");
         when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class),
-                any(ParameterizedTypeReference.class))).thenReturn(response);
+                eq(String.class))).thenReturn(response);
         assertEquals("rec-123", service.startRecording("room-123"));
     }
 
     @Test
     @SuppressWarnings("unchecked")
     void startRecording_nullBody_throwsIllegalState() {
-        ResponseEntity<Map<String, Object>> response = ResponseEntity.ok(null);
+        ResponseEntity<String> response = ResponseEntity.ok(null);
         when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class),
-                any(ParameterizedTypeReference.class))).thenReturn(response);
-        assertThrows(IllegalStateException.class, () -> service.startRecording("room-123"));
+                eq(String.class))).thenReturn(response);
+        assertThrows(RuntimeException.class, () -> service.startRecording("room-123"));
     }
 
     @Test
     void stopRecording_success() {
-        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(Map.class)))
-                .thenReturn(ResponseEntity.ok(Map.of()));
+        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(String.class)))
+                .thenReturn(ResponseEntity.ok(""));
         assertDoesNotThrow(() -> service.stopRecording("room-123"));
     }
 

@@ -11,4 +11,10 @@ public class CreateConferenceRequest {
     private String description;
     private String scheduledAt;
     private Integer maxParticipants;
+    
+    // Optional fields for LIVE course creation flow
+    private String courseId;
+    private String moduleId;
+    private String lessonId;
+    private String sourceType;
 }

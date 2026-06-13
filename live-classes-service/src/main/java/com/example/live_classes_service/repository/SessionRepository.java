@@ -47,7 +47,8 @@ public class SessionRepository {
             String expectedStatus,
             String newStatus,
             String timeField,
-            String timeValue
+            String timeValue,
+            String actionType
     ) {
         try {
 
@@ -58,15 +59,17 @@ public class SessionRepository {
             values.put(":expected", new AttributeValue().withS(expectedStatus));
             values.put(":newStatus", new AttributeValue().withS(newStatus));
             values.put(":time", new AttributeValue().withS(timeValue));
+            values.put(":actionType", new AttributeValue().withS(actionType));
 
             Map<String, String> names = new HashMap<>();
             names.put("#status", "status");
             names.put("#timeField", timeField);
+            names.put("#actionTypeField", "actionType");
 
             UpdateItemRequest request = new UpdateItemRequest()
                     .withTableName(tableName)
                     .withKey(key)
-                    .withUpdateExpression("SET #status = :newStatus, #timeField = :time")
+                    .withUpdateExpression("SET #status = :newStatus, #timeField = :time, #actionTypeField = :actionType")
                     .withConditionExpression("#status = :expected")
                     .withExpressionAttributeNames(names)
                     .withExpressionAttributeValues(values);

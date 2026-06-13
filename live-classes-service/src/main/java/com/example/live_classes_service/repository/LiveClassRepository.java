@@ -38,12 +38,13 @@ public class LiveClassRepository {
 
         return dynamoDBMapper.query(LiveClassEntity.class, query);
     }
-    public boolean updateStatusIfNotStarted(String liveClassId, String startedAt) {
+    public boolean updateStatusIfNotStarted(String liveClassId, String startedAt, String actionType) {
         try {
             LiveClassEntity entity = new LiveClassEntity();
             entity.setLiveClassId(liveClassId);
             entity.setStatus("LIVE_STARTED");
             entity.setStartedAt(startedAt);
+            entity.setActionType(actionType);
 
             DynamoDBSaveExpression expression = new DynamoDBSaveExpression()
                     .withExpectedEntry("status",
@@ -51,7 +52,13 @@ public class LiveClassRepository {
                                     .withValue(new AttributeValue().withS("SCHEDULED"))
                     );
 
-            dynamoDBMapper.save(entity, expression);
+            // Use UPDATE_SKIP_NULL_ATTRIBUTES to only update status & startedAt
+            // without deleting existing fields like title, description, trainerId, etc.
+            DynamoDBMapperConfig config = DynamoDBMapperConfig.builder()
+                    .withSaveBehavior(DynamoDBMapperConfig.SaveBehavior.UPDATE_SKIP_NULL_ATTRIBUTES)
+                    .build();
+
+            dynamoDBMapper.save(entity, expression, config);
             return true;
 
         } catch (ConditionalCheckFailedException e) {
@@ -88,5 +95,17 @@ public class LiveClassRepository {
                 dynamoDBMapper.query(LiveClassEntity.class, query);
 
         return result.isEmpty() ? null : result.get(0);
+    }
+
+    public List<LiveClassEntity> findUpcomingLiveClasses(String startTime, String endTime) {
+        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression()
+            .withFilterExpression("#status = :status AND scheduledAt BETWEEN :start AND :end")
+            .withExpressionAttributeNames(java.util.Map.of("#status", "status"))
+            .withExpressionAttributeValues(java.util.Map.of(
+                ":status", new AttributeValue().withS("SCHEDULED"),
+                ":start", new AttributeValue().withS(startTime),
+                ":end", new AttributeValue().withS(endTime)
+            ));
+        return dynamoDBMapper.scan(LiveClassEntity.class, scanExpression);
     }
 }

@@ -1,7 +1,7 @@
 package com.example.live_classes_service.service.impl;
 
 import com.example.live_classes_service.dto.request.CreateLiveClassRequest;
-import com.example.live_classes_service.dto.response.EnrollmentStatusResponse;
+import com.example.live_classes_service.dto.response.SessionStatusResponse;
 import com.example.live_classes_service.dto.response.LiveClassJoinResponseDTO;
 import com.example.live_classes_service.dto.response.LiveClassResponseDTO;
 import com.example.live_classes_service.exception.BadRequestException;
@@ -102,7 +102,7 @@ class LiveClassServiceImplTest {
         when(repository.findById(LIVE_CLASS_ID)).thenReturn(entity);
         when(jwtUtil.extractUserId(TOKEN)).thenReturn(TRAINER_ID);
         when(jwtUtil.extractName(TOKEN)).thenReturn(TRAINER_NAME);
-        when(repository.updateStatusIfNotStarted(eq(LIVE_CLASS_ID), anyString())).thenReturn(true);
+        when(repository.updateStatusIfNotStarted(eq(LIVE_CLASS_ID), anyString(), anyString())).thenReturn(true);
 
         LiveClassResponseDTO result = service.startLiveClass(LIVE_CLASS_ID, TOKEN);
 
@@ -130,7 +130,7 @@ class LiveClassServiceImplTest {
         when(repository.findById(LIVE_CLASS_ID)).thenReturn(entity);
         when(jwtUtil.extractUserId(TOKEN)).thenReturn(TRAINER_ID);
         when(jwtUtil.extractName(TOKEN)).thenReturn(TRAINER_NAME);
-        when(repository.updateStatusIfNotStarted(eq(LIVE_CLASS_ID), anyString())).thenReturn(false);
+        when(repository.updateStatusIfNotStarted(eq(LIVE_CLASS_ID), anyString(), anyString())).thenReturn(false);
         assertThrows(BadRequestException.class, () -> service.startLiveClass(LIVE_CLASS_ID, TOKEN));
     }
 
@@ -174,9 +174,9 @@ class LiveClassServiceImplTest {
         when(jwtUtil.extractRole(TOKEN)).thenReturn("LEARNER");
         when(videoSDKService.generateToken()).thenReturn("sdk-token");
 
-        EnrollmentStatusResponse status = new EnrollmentStatusResponse();
+        SessionStatusResponse status = new SessionStatusResponse();
         status.setEnrolled(true);
-        when(enrollmentClient.getEnrollmentStatus(COURSE_ID, TOKEN)).thenReturn(status);
+        when(enrollmentClient.getCourseEnrollmentStatus(COURSE_ID, TOKEN)).thenReturn(status);
 
         LiveClassJoinResponseDTO result = service.joinLiveClass(LIVE_CLASS_ID, TOKEN);
 
@@ -191,9 +191,9 @@ class LiveClassServiceImplTest {
         when(jwtUtil.extractUserId(TOKEN)).thenReturn("learner-001");
         when(jwtUtil.extractRole(TOKEN)).thenReturn("LEARNER");
 
-        EnrollmentStatusResponse status = new EnrollmentStatusResponse();
+        SessionStatusResponse status = new SessionStatusResponse();
         status.setEnrolled(false);
-        when(enrollmentClient.getEnrollmentStatus(COURSE_ID, TOKEN)).thenReturn(status);
+        when(enrollmentClient.getCourseEnrollmentStatus(COURSE_ID, TOKEN)).thenReturn(status);
 
         assertThrows(BadRequestException.class, () -> service.joinLiveClass(LIVE_CLASS_ID, TOKEN));
     }
@@ -204,7 +204,7 @@ class LiveClassServiceImplTest {
         when(repository.findById(LIVE_CLASS_ID)).thenReturn(entity);
         when(jwtUtil.extractUserId(TOKEN)).thenReturn("learner-001");
         when(jwtUtil.extractRole(TOKEN)).thenReturn("LEARNER");
-        when(enrollmentClient.getEnrollmentStatus(COURSE_ID, TOKEN)).thenReturn(null);
+        when(enrollmentClient.getCourseEnrollmentStatus(COURSE_ID, TOKEN)).thenReturn(null);
 
         assertThrows(BadRequestException.class, () -> service.joinLiveClass(LIVE_CLASS_ID, TOKEN));
     }

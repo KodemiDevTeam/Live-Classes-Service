@@ -28,6 +28,12 @@ public class ConferenceEntity {
     private String recordingUrl;
     private String createdAt;
 
+    // Added fields for Live Course integration
+    private String courseId;
+    private String moduleId;
+    private String lessonId;
+    private String sourceType;
+
     @DynamoDBHashKey(attributeName = "conferenceId")
     public String getConferenceId() {
         return conferenceId;

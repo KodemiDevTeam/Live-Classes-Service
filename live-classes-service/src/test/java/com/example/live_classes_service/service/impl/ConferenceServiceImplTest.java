@@ -78,7 +78,7 @@ class ConferenceServiceImplTest {
         when(repository.findById(CONFERENCE_ID)).thenReturn(entity);
         when(jwtUtil.extractUserId(TOKEN)).thenReturn(ORGANIZER_ID);
         when(jwtUtil.extractName(TOKEN)).thenReturn(ORGANIZER_NAME);
-        when(repository.updateStatusIfNotStarted(eq(CONFERENCE_ID), anyString())).thenReturn(true);
+        when(repository.updateStatusIfNotStarted(eq(CONFERENCE_ID), anyString(), anyString())).thenReturn(true);
         ConferenceResponseDTO result = service.startConference(CONFERENCE_ID, TOKEN);
         assertNotNull(result);
         assertEquals("CONFERENCE_STARTED", result.getStatus());
@@ -105,7 +105,7 @@ class ConferenceServiceImplTest {
         when(repository.findById(CONFERENCE_ID)).thenReturn(entity);
         when(jwtUtil.extractUserId(TOKEN)).thenReturn(ORGANIZER_ID);
         when(jwtUtil.extractName(TOKEN)).thenReturn(ORGANIZER_NAME);
-        when(repository.updateStatusIfNotStarted(eq(CONFERENCE_ID), anyString())).thenReturn(false);
+        when(repository.updateStatusIfNotStarted(eq(CONFERENCE_ID), anyString(), anyString())).thenReturn(false);
         assertThrows(BadRequestException.class, () -> service.startConference(CONFERENCE_ID, TOKEN));
     }
 

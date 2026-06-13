@@ -1,6 +1,7 @@
 package com.example.live_classes_service.repository;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
@@ -96,14 +97,14 @@ class LiveClassRepositoryTest {
 
     @Test
     void updateStatusIfNotStarted_returnsTrue_onSuccess() {
-        doNothing().when(dynamoDBMapper).save(any(LiveClassEntity.class), any(DynamoDBSaveExpression.class));
-        assertTrue(repository.updateStatusIfNotStarted("lc-001", "2026-05-01T10:00:00Z"));
+        doNothing().when(dynamoDBMapper).save(any(LiveClassEntity.class), any(DynamoDBSaveExpression.class), any(DynamoDBMapperConfig.class));
+        assertTrue(repository.updateStatusIfNotStarted("lc-001", "2026-05-01T10:00:00Z", "STARTED"));
     }
 
     @Test
     void updateStatusIfNotStarted_returnsFalse_onConditionalCheckFailed() {
         doThrow(new ConditionalCheckFailedException("already started"))
-                .when(dynamoDBMapper).save(any(LiveClassEntity.class), any(DynamoDBSaveExpression.class));
-        assertFalse(repository.updateStatusIfNotStarted("lc-001", "2026-05-01T10:00:00Z"));
+                .when(dynamoDBMapper).save(any(LiveClassEntity.class), any(DynamoDBSaveExpression.class), any(DynamoDBMapperConfig.class));
+        assertFalse(repository.updateStatusIfNotStarted("lc-001", "2026-05-01T10:00:00Z", "STARTED"));
     }
 }

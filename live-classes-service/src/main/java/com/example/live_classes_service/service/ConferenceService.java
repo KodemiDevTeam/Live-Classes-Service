@@ -4,6 +4,8 @@ import com.example.live_classes_service.dto.request.CreateConferenceRequest;
 import com.example.live_classes_service.dto.response.ConferenceJoinResponseDTO;
 import com.example.live_classes_service.dto.response.ConferenceResponseDTO;
 
+import java.util.List;
+
 public interface ConferenceService {
 
     ConferenceResponseDTO createConference(CreateConferenceRequest request, String token);
@@ -18,5 +20,9 @@ public interface ConferenceService {
 
     String endConference (String conferenceId, String token);
 
+    List<ConferenceResponseDTO> getConferencesByOrganizer(String token);
 
-}
+    List<ConferenceResponseDTO> getAllConferences();
+
+    ConferenceResponseDTO getConference(String conferenceId);
+}

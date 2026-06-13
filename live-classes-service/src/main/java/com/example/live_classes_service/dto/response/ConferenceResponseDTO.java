@@ -23,4 +23,6 @@ public class ConferenceResponseDTO {
     private Boolean isRecording;
     private String recordingUrl;
     private String createdAt;
+    private String courseId;
+    private String sourceType;
 }

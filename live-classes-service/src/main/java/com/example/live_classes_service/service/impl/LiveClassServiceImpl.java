@@ -3,15 +3,18 @@ package com.example.live_classes_service.service.impl;
 import com.example.live_classes_service.dto.request.CreateLiveClassRequest;
 import com.example.live_classes_service.dto.response.LiveClassJoinResponseDTO;
 import com.example.live_classes_service.dto.response.LiveClassResponseDTO;
-import com.example.live_classes_service.dto.response.EnrollmentStatusResponse;
+import com.example.live_classes_service.dto.response.SessionStatusResponse;
 import com.example.live_classes_service.exception.BadRequestException;
 import com.example.live_classes_service.exception.UnauthorizedException;
 import com.example.live_classes_service.model.LiveClassEntity;
 import com.example.live_classes_service.repository.LiveClassRepository;
 import com.example.live_classes_service.service.LiveClassService;
 import com.example.live_classes_service.feign.EnrollmentClient;
+import com.example.live_classes_service.service.notification.NotificationPublisher;
+import com.example.live_classes_service.dto.notification.NotificationRequest;
+import com.example.live_classes_service.dto.notification.NotificationType;
+import com.example.live_classes_service.dto.notification.NotificationChannel;
 import com.example.live_classes_service.util.JwtUtil;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,6 +34,7 @@ public class LiveClassServiceImpl implements LiveClassService {
     private final EnrollmentClient enrollmentClient;
     private final JwtUtil jwtUtil;
     private final VideoSDKService videoSDKService;
+    private final NotificationPublisher notificationPublisher;
 
     private static final String ROLE_TRAINER = "TRAINER";
     private static final String ROLE_LEARNER = "LEARNER";
@@ -39,6 +43,7 @@ public class LiveClassServiceImpl implements LiveClassService {
     private static final String STATUS_SCHEDULED = "SCHEDULED";
     private static final String ACTION_CREATED = "CREATED";
     private static final String ACTION_STARTED = "STARTED";
+    private static final String ACTION_ENDED = "ENDED";
 
 
     @Override
@@ -79,6 +84,23 @@ public class LiveClassServiceImpl implements LiveClassService {
         repository.save(entity);
         log.info("Live class created: {}", entity.getLiveClassId());
 
+        try {
+            List<String> learners = enrollmentClient.getEnrolledLearners(request.getCourseId());
+            if (learners != null && !learners.isEmpty()) {
+                NotificationRequest notif = NotificationRequest.builder()
+                        .title("Live Class Scheduled")
+                        .message("A new live class '" + request.getTitle() + "' has been scheduled for your course by " + trainerName)
+                        .type(NotificationType.LIVE_CLASS_SCHEDULED)
+                        .channels(List.of(NotificationChannel.IN_APP, NotificationChannel.EMAIL))
+                        .referenceId(entity.getLiveClassId())
+                        .referenceType("LIVE_CLASS")
+                        .build();
+                notificationPublisher.publishToUsers(learners, notif);
+            }
+        } catch (Exception ex) {
+            log.error("Failed to send LIVE_CLASS_SCHEDULED notification", ex);
+        }
+
         return mapToResponse(entity);
     }
 
@@ -98,7 +120,7 @@ public class LiveClassServiceImpl implements LiveClassService {
 
         String startedAt = Instant.now().toString();
 
-        boolean updated = repository.updateStatusIfNotStarted(sessionId, startedAt);
+        boolean updated = repository.updateStatusIfNotStarted(sessionId, startedAt, ACTION_STARTED);
 
         if (!updated) {
             throw new BadRequestException("Live class already started");
@@ -109,6 +131,23 @@ public class LiveClassServiceImpl implements LiveClassService {
         entity.setActionType(ACTION_STARTED);
 
         log.info("Live class started: {}", sessionId);
+
+        try {
+            List<String> learners = enrollmentClient.getEnrolledLearners(entity.getCourseId());
+            if (learners != null && !learners.isEmpty()) {
+                NotificationRequest notif = NotificationRequest.builder()
+                        .title("Live Class Started")
+                        .message("The live class '" + entity.getTitle() + "' has just started! Join now.")
+                        .type(NotificationType.LIVE_CLASS_STARTED)
+                        .channels(List.of(NotificationChannel.IN_APP))
+                        .referenceId(entity.getLiveClassId())
+                        .referenceType("LIVE_CLASS")
+                        .build();
+                notificationPublisher.publishToUsers(learners, notif);
+            }
+        } catch (Exception ex) {
+            log.error("Failed to send LIVE_CLASS_STARTED notification", ex);
+        }
 
         return mapToResponse(entity, trainerId, trainerName);
     }
@@ -202,6 +241,7 @@ public class LiveClassServiceImpl implements LiveClassService {
 
         entity.setStatus(STATUS_ENDED);
         entity.setEndedAt(Instant.now().toString());
+        entity.setActionType(ACTION_ENDED);
 
         repository.save(entity);
         log.info("Live class ended: {}", sessionId);
@@ -234,8 +274,8 @@ public class LiveClassServiceImpl implements LiveClassService {
 
         if (ROLE_LEARNER.equals(role)) {
             try {
-                EnrollmentStatusResponse status =
-                        enrollmentClient.getEnrollmentStatus(entity.getCourseId(), token);
+                SessionStatusResponse status =
+                        enrollmentClient.getCourseEnrollmentStatus(entity.getCourseId(), token);
 
                 if (status == null || !status.isEnrolled()) {
                     throw new BadRequestException("User not enrolled");

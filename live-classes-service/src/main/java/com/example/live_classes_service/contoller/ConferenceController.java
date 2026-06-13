@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/conferences")
 @RequiredArgsConstructor
@@ -105,4 +107,41 @@ public class ConferenceController {
 
         return ResponseEntity.ok(response);
     }
-}
+
+    @GetMapping("/get-all-ByOrganizer")
+    public ResponseEntity<List<ConferenceResponseDTO>> getConferencesByOrganizer(
+            @RequestHeader("Authorization") String token
+    ) {
+        log.info("Get all conferences by organizer request");
+
+        List<ConferenceResponseDTO> response = service.getConferencesByOrganizer(token);
+
+        log.info("Returning {} conferences for organizer", response.size());
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/get-all")
+    public ResponseEntity<List<ConferenceResponseDTO>> getAllConferences() {
+        log.info("Get all conferences request");
+
+        List<ConferenceResponseDTO> response = service.getAllConferences();
+
+        log.info("Returning {} total conferences", response.size());
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/get-conference/{conferenceId}")
+    public ResponseEntity<ConferenceResponseDTO> getConference(
+            @PathVariable String conferenceId
+    ) {
+        log.info("Get conference request | conferenceId={}", conferenceId);
+
+        ConferenceResponseDTO response = service.getConference(conferenceId);
+
+        log.info("Conference found | conferenceId={}", conferenceId);
+
+        return ResponseEntity.ok(response);
+    }
+}
