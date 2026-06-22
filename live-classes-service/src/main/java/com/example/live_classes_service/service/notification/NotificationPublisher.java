@@ -1,6 +1,6 @@
 package com.example.live_classes_service.service.notification;
 
-import com.example.live_classes_service.client.notification.NotificationClient;
+import com.example.live_classes_service.client.NotificationClient;
 import com.example.live_classes_service.dto.notification.NotificationRequest;
 import com.example.live_classes_service.dto.notification.BroadcastNotificationRequest;
 import lombok.extern.slf4j.Slf4j;

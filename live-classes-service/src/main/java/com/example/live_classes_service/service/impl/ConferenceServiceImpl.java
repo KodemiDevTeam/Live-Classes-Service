@@ -5,9 +5,13 @@ import com.example.live_classes_service.dto.response.ConferenceJoinResponseDTO;
 import com.example.live_classes_service.dto.response.ConferenceResponseDTO;
 import com.example.live_classes_service.dto.response.SessionStatusResponse;
 import com.example.live_classes_service.exception.BadRequestException;
+import com.example.live_classes_service.exception.ConflictException;
+import com.example.live_classes_service.exception.ForbiddenException;
 import com.example.live_classes_service.exception.NullBodyException;
+import com.example.live_classes_service.exception.ResourceNotFoundException;
 import com.example.live_classes_service.exception.TokenNotFoundException;
 import com.example.live_classes_service.exception.UnauthorizedException;
+import com.example.live_classes_service.exception.VideoSDKException;
 import com.example.live_classes_service.feign.EnrollmentClient;
 import com.example.live_classes_service.model.ConferenceEntity;
 import com.example.live_classes_service.repository.ConferenceRepository;
@@ -131,14 +135,14 @@ public class ConferenceServiceImpl implements ConferenceService {
         validateOrganizer(entity, userId);
 
         if (STATUS_ENDED.equals(entity.getStatus())) {
-            throw new BadRequestException("Conference already ended");
+            throw new ConflictException("Conference has already ended and cannot be started again");
         }
 
         String startedAt = Instant.now().toString();
         boolean updated = repository.updateStatusIfNotStarted(conferenceId, startedAt, ACTION_STARTED);
 
         if (!updated) {
-            throw new BadRequestException("Conference already started");
+            throw new ConflictException("Conference has already been started");
         }
 
         entity.setStatus(STATUS_STARTED);
@@ -157,7 +161,7 @@ public class ConferenceServiceImpl implements ConferenceService {
         ConferenceEntity entity = getConferenceOrThrow(conferenceId);
 
         if (!STATUS_STARTED.equals(entity.getStatus())) {
-            throw new BadRequestException("Conference is not started yet");
+            throw new ConflictException("Conference is not started yet. Current status: " + entity.getStatus());
         }
 
         String userId = extractUserIdOrThrow(token);
@@ -232,18 +236,18 @@ public class ConferenceServiceImpl implements ConferenceService {
     private ConferenceEntity getConferenceOrThrow(String conferenceId) {
         ConferenceEntity entity = repository.findById(conferenceId);
         if (entity == null) {
-            throw new BadRequestException("Conference not found");
+            throw new ResourceNotFoundException("Conference not found with id: " + conferenceId);
         }
         return entity;
     }
 
     private void validateOrganizer(ConferenceEntity entity, String userId) {
         if (entity.getOrganizerId() == null) {
-            throw new IllegalStateException("Organizer ID missing in DB");
+            throw new IllegalStateException("Organizer ID is missing in the database for conference: " + entity.getConferenceId());
         }
 
         if (!Objects.equals(entity.getOrganizerId(), userId)) {
-            throw new UnauthorizedException("Only organizer allowed");
+            throw new ForbiddenException("Only the organizer can perform this action on the conference");
         }
     }
 
@@ -251,7 +255,7 @@ public class ConferenceServiceImpl implements ConferenceService {
 
         if (ROLE_TRAINER.equals(role)) {
             if (!Objects.equals(entity.getOrganizerId(), userId)) {
-                throw new UnauthorizedException("Not organizer");
+                throw new ForbiddenException("You are not the organizer of this conference");
             }
             return;
         }
@@ -289,7 +293,7 @@ public class ConferenceServiceImpl implements ConferenceService {
             return;
         }
 
-        throw new UnauthorizedException("Invalid role");
+        throw new ForbiddenException("Users with role '" + role + "' are not allowed to join conferences");
     }
 
     private ConferenceResponseDTO mapToResponse(ConferenceEntity entity) {
@@ -359,10 +363,10 @@ public class ConferenceServiceImpl implements ConferenceService {
                 log.warn("Retry attempt {} failed", i + 1, e);
 
                 if (i == attempts - 1) {
-                    throw new BadRequestException("External service failed");
+                    throw new VideoSDKException("VideoSDK service operation failed after " + attempts + " attempts", e);
                 }
             }
         }
-        throw new BadRequestException("Retry failed");
+        throw new VideoSDKException("VideoSDK service operation failed after exhausting all retries");
     }
 }

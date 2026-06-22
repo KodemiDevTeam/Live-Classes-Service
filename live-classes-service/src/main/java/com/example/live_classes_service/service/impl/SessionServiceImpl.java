@@ -5,7 +5,11 @@ import com.example.live_classes_service.dto.response.SessionJoinResponseDTO;
 import com.example.live_classes_service.dto.response.SessionResponseDTO;
 import com.example.live_classes_service.dto.response.SessionStatusResponse;
 import com.example.live_classes_service.exception.BadRequestException;
+import com.example.live_classes_service.exception.ConflictException;
+import com.example.live_classes_service.exception.ForbiddenException;
+import com.example.live_classes_service.exception.ResourceNotFoundException;
 import com.example.live_classes_service.exception.UnauthorizedException;
+import com.example.live_classes_service.exception.VideoSDKException;
 import com.example.live_classes_service.feign.EnrollmentClient;
 import com.example.live_classes_service.model.SessionEntity;
 import com.example.live_classes_service.repository.SessionRepository;
@@ -46,7 +50,7 @@ public class SessionServiceImpl implements SessionService {
 
         String role = jwtUtil.extractRole(token);
         if (!ROLE_TRAINER.equals(role)) {
-            throw new UnauthorizedException("Only trainer can create session");
+            throw new ForbiddenException("Only trainers are allowed to create sessions");
         }
 
         String organizerId = jwtUtil.extractUserId(token);
@@ -92,7 +96,7 @@ public class SessionServiceImpl implements SessionService {
         validateOrganizer(entity, organizerId);
 
         if (STATUS_ENDED.equals(entity.getStatus())) {
-            throw new BadRequestException("Session already ended");
+            throw new ConflictException("Session has already ended and cannot be started again");
         }
 
         String startedAt = Instant.now().toString();
@@ -110,7 +114,7 @@ public class SessionServiceImpl implements SessionService {
             if (STATUS_STARTED.equals(entity.getStatus())) {
                 return mapToResponse(entity, organizerId, organizerName);
             }
-            throw new BadRequestException("Session already started or invalid state");
+            throw new ConflictException("Session has already been started or is in an invalid state");
         }
 
         entity.setStatus(STATUS_STARTED);
@@ -126,7 +130,7 @@ public class SessionServiceImpl implements SessionService {
 
         SessionEntity entity = getSessionOrThrow(sessionId);
         if (!STATUS_STARTED.equals(entity.getStatus())) {
-            throw new BadRequestException("session is not started yet");
+            throw new ConflictException("Session is not started yet. Current status: " + entity.getStatus());
         }
 
         String userId = jwtUtil.extractUserId(token);
@@ -208,14 +212,14 @@ public class SessionServiceImpl implements SessionService {
     private SessionEntity getSessionOrThrow(String sessionId) {
         SessionEntity entity = repository.findById(sessionId);
         if (entity == null) {
-            throw new BadRequestException("Session not found");
+            throw new ResourceNotFoundException("Session not found with id: " + sessionId);
         }
         return entity;
     }
 
     private void validateOrganizer(SessionEntity entity, String userId) {
         if (!entity.getOrganizerId().equals(userId)) {
-            throw new UnauthorizedException("Only organizer allowed");
+            throw new ForbiddenException("Only the organizer can perform this action on the session");
         }
     }
 
@@ -223,7 +227,7 @@ public class SessionServiceImpl implements SessionService {
 
         if (ROLE_TRAINER.equals(role)) {
             if (!entity.getOrganizerId().equals(userId)) {
-                throw new UnauthorizedException("Not organizer");
+                throw new ForbiddenException("You are not the organizer of this session");
             }
             return;
         }
@@ -246,7 +250,7 @@ public class SessionServiceImpl implements SessionService {
             return;
         }
 
-        throw new UnauthorizedException("Invalid role");
+        throw new ForbiddenException("Users with role '" + role + "' are not allowed to join sessions");
     }
 
     private SessionResponseDTO mapToResponse(SessionEntity entity) {
@@ -282,10 +286,10 @@ public class SessionServiceImpl implements SessionService {
                 log.warn("Retry attempt {} failed", i + 1, e);
 
                 if (i == attempts - 1) {
-                    throw new BadRequestException("External service failed");
+                    throw new VideoSDKException("VideoSDK service operation failed after " + attempts + " attempts", e);
                 }
             }
         }
-        throw new BadRequestException("Retry failed");
+        throw new VideoSDKException("VideoSDK service operation failed after exhausting all retries");
     }
 }

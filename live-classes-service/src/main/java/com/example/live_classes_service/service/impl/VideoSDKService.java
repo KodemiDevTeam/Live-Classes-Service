@@ -1,5 +1,6 @@
 package com.example.live_classes_service.service.impl;
 
+import com.example.live_classes_service.exception.VideoSDKException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -82,7 +83,7 @@ public class VideoSDKService {
         Map<String, Object> body = response.getBody();
 
         if (body == null) {
-            throw new IllegalStateException("Empty response body from VideoSDK createRoom");
+            throw new VideoSDKException("Empty response body from VideoSDK when creating room");
         }
 
         String roomId = (String) body.get(ROOM_ID);
@@ -164,7 +165,7 @@ public class VideoSDKService {
             log.info("VideoSDK startRecording raw response | roomId={} | body={}", roomId, responseBody);
 
             if (responseBody == null) {
-                throw new IllegalStateException("Empty response body from VideoSDK startRecording");
+                throw new VideoSDKException("Empty response body from VideoSDK when starting recording");
             }
 
             // Parse the recording ID from JSON response
@@ -177,7 +178,7 @@ public class VideoSDKService {
             return recordingId;
         } catch (Exception e) {
             log.error("VideoSDK startRecording failed | roomId={} | error={}", roomId, e.getMessage(), e);
-            throw new RuntimeException("Failed to start recording: " + e.getMessage(), e);
+            throw new VideoSDKException("Failed to start recording for roomId: " + roomId, e);
         }
     }
 
@@ -202,7 +203,7 @@ public class VideoSDKService {
             log.info("Recording stopped | roomId={}", roomId);
         } catch (Exception e) {
             log.error("VideoSDK stopRecording failed | roomId={} | error={}", roomId, e.getMessage(), e);
-            throw new RuntimeException("Failed to stop recording: " + e.getMessage(), e);
+            throw new VideoSDKException("Failed to stop recording for roomId: " + roomId, e);
         }
     }
 

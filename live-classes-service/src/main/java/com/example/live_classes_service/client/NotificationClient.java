@@ -1,4 +1,4 @@
-package com.example.live_classes_service.client.notification;
+package com.example.live_classes_service.client;
 
 import com.example.live_classes_service.dto.notification.NotificationRequest;
 import org.springframework.cloud.openfeign.FeignClient;

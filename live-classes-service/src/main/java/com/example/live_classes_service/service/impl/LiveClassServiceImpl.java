@@ -5,7 +5,11 @@ import com.example.live_classes_service.dto.response.LiveClassJoinResponseDTO;
 import com.example.live_classes_service.dto.response.LiveClassResponseDTO;
 import com.example.live_classes_service.dto.response.SessionStatusResponse;
 import com.example.live_classes_service.exception.BadRequestException;
+import com.example.live_classes_service.exception.ConflictException;
+import com.example.live_classes_service.exception.ForbiddenException;
+import com.example.live_classes_service.exception.ResourceNotFoundException;
 import com.example.live_classes_service.exception.UnauthorizedException;
+import com.example.live_classes_service.exception.VideoSDKException;
 import com.example.live_classes_service.model.LiveClassEntity;
 import com.example.live_classes_service.repository.LiveClassRepository;
 import com.example.live_classes_service.service.LiveClassService;
@@ -51,7 +55,7 @@ public class LiveClassServiceImpl implements LiveClassService {
 
         String role = jwtUtil.extractRole(token);
         if (!ROLE_TRAINER.equals(role)) {
-            throw new UnauthorizedException("Only trainer can create live class");
+            throw new ForbiddenException("Only trainers are allowed to create live classes");
         }
 
         String trainerId = jwtUtil.extractUserId(token);
@@ -115,7 +119,7 @@ public class LiveClassServiceImpl implements LiveClassService {
         validateTrainer(entity, trainerId);
 
         if (STATUS_ENDED.equals(entity.getStatus())) {
-            throw new BadRequestException("Live class already ended");
+            throw new ConflictException("Live class has already ended and cannot be started again");
         }
 
         String startedAt = Instant.now().toString();
@@ -123,7 +127,7 @@ public class LiveClassServiceImpl implements LiveClassService {
         boolean updated = repository.updateStatusIfNotStarted(sessionId, startedAt, ACTION_STARTED);
 
         if (!updated) {
-            throw new BadRequestException("Live class already started");
+            throw new ConflictException("Live class has already been started");
         }
 
         entity.setStatus(STATUS_STARTED);
@@ -159,7 +163,7 @@ public class LiveClassServiceImpl implements LiveClassService {
         LiveClassEntity entity = getLiveClassOrThrow(sessionId);
 
         if (!STATUS_STARTED.equals(entity.getStatus())) {
-            throw new BadRequestException("Live class is not started yet");
+            throw new ConflictException("Live class is not started yet. Current status: " + entity.getStatus());
         }
 
         String userId = jwtUtil.extractUserId(token);
@@ -252,14 +256,14 @@ public class LiveClassServiceImpl implements LiveClassService {
     private LiveClassEntity getLiveClassOrThrow(String id) {
         LiveClassEntity entity = repository.findById(id);
         if (entity == null) {
-            throw new BadRequestException("Live class not found");
+            throw new ResourceNotFoundException("Live class not found with id: " + id);
         }
         return entity;
     }
 
     private void validateTrainer(LiveClassEntity entity, String userId) {
         if (!entity.getTrainerId().equals(userId)) {
-            throw new UnauthorizedException("Only trainer allowed");
+            throw new ForbiddenException("Only the assigned trainer can perform this action on the live class");
         }
     }
 
@@ -267,7 +271,7 @@ public class LiveClassServiceImpl implements LiveClassService {
 
         if (ROLE_TRAINER.equals(role)) {
             if (!entity.getTrainerId().equals(userId)) {
-                throw new UnauthorizedException("Not trainer of this class");
+                throw new ForbiddenException("You are not the trainer of this live class");
             }
             return;
         }
@@ -290,7 +294,7 @@ public class LiveClassServiceImpl implements LiveClassService {
             return;
         }
 
-        throw new UnauthorizedException("Invalid role");
+        throw new ForbiddenException("Users with role '" + role + "' are not allowed to join live classes");
     }
 
     private LiveClassResponseDTO mapToResponse(LiveClassEntity entity) {
@@ -327,10 +331,10 @@ public class LiveClassServiceImpl implements LiveClassService {
                 log.warn("Retry attempt {} failed", i + 1, e);
 
                 if (i == attempts - 1) {
-                    throw new BadRequestException("External service failed");
+                    throw new VideoSDKException("VideoSDK service operation failed after " + attempts + " attempts", e);
                 }
             }
         }
-        throw new BadRequestException("Retry failed");
+        throw new VideoSDKException("VideoSDK service operation failed after exhausting all retries");
     }
 }
