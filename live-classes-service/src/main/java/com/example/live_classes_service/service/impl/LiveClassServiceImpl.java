@@ -231,6 +231,24 @@ public class LiveClassServiceImpl implements LiveClassService {
         repository.save(entity);
         log.info("Recording stopped: {}", sessionId);
 
+        // Notify enrolled learners that recording is now available
+        try {
+            List<String> learners = enrollmentClient.getEnrolledLearners(entity.getCourseId());
+            if (learners != null && !learners.isEmpty()) {
+                NotificationRequest notif = NotificationRequest.builder()
+                        .title("Recording Available")
+                        .message("The recording for '" + entity.getTitle() + "' is now available. You can watch it anytime.")
+                        .type(NotificationType.RECORDING_AVAILABLE)
+                        .channels(List.of(NotificationChannel.IN_APP, NotificationChannel.EMAIL))
+                        .referenceId(entity.getLiveClassId())
+                        .referenceType("LIVE_CLASS")
+                        .build();
+                notificationPublisher.publishToUsers(learners, notif);
+            }
+        } catch (Exception ex) {
+            log.error("Failed to send RECORDING_AVAILABLE notification", ex);
+        }
+
         return "Recording Stopped";
     }
     @Override
@@ -249,6 +267,24 @@ public class LiveClassServiceImpl implements LiveClassService {
 
         repository.save(entity);
         log.info("Live class ended: {}", sessionId);
+
+        // Notify enrolled learners that the class has ended
+        try {
+            List<String> learners = enrollmentClient.getEnrolledLearners(entity.getCourseId());
+            if (learners != null && !learners.isEmpty()) {
+                NotificationRequest notif = NotificationRequest.builder()
+                        .title("Live Class Ended")
+                        .message("The live class '" + entity.getTitle() + "' has ended. Recording will be available soon.")
+                        .type(NotificationType.LIVE_CLASS_CANCELLED)
+                        .channels(List.of(NotificationChannel.IN_APP))
+                        .referenceId(entity.getLiveClassId())
+                        .referenceType("LIVE_CLASS")
+                        .build();
+                notificationPublisher.publishToUsers(learners, notif);
+            }
+        } catch (Exception ex) {
+            log.error("Failed to send LIVE_CLASS_ENDED notification", ex);
+        }
 
         return "Live Class Ended";
     }
