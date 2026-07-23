@@ -1,3 +1,5 @@
 .env
 application-local.yml
 application-local.yaml
+
+env.txt
