@@ -330,6 +330,7 @@ public class ConferenceServiceImpl implements ConferenceService {
         log.info("Found {} conferences for organizer: {}", entities.size(), organizerId);
 
         return entities.stream()
+                .filter(e -> !"LIVE_COURSE".equals(e.getSourceType()))
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -342,6 +343,7 @@ public class ConferenceServiceImpl implements ConferenceService {
         log.info("Found {} total conferences", entities.size());
 
         return entities.stream()
+                .filter(e -> !"LIVE_COURSE".equals(e.getSourceType()))
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
