@@ -330,7 +330,7 @@ public class ConferenceServiceImpl implements ConferenceService {
         log.info("Found {} conferences for organizer: {}", entities.size(), organizerId);
 
         return entities.stream()
-                .filter(e -> !"LIVE_COURSE".equals(e.getSourceType()))
+                .filter(e -> !isLiveCourseConference(e))
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -343,7 +343,7 @@ public class ConferenceServiceImpl implements ConferenceService {
         log.info("Found {} total conferences", entities.size());
 
         return entities.stream()
-                .filter(e -> !"LIVE_COURSE".equals(e.getSourceType()))
+                .filter(e -> !isLiveCourseConference(e))
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -353,6 +353,18 @@ public class ConferenceServiceImpl implements ConferenceService {
         log.info("Fetching conference: {}", conferenceId);
         ConferenceEntity entity = getConferenceOrThrow(conferenceId);
         return mapToResponse(entity);
+    }
+
+    /**
+     * Checks whether a conference belongs to a live course.
+     * Handles both new conferences (sourceType = "LIVE_COURSE") and
+     * older conferences (sourceType is null but courseId is set).
+     */
+    private boolean isLiveCourseConference(ConferenceEntity e) {
+        if ("LIVE_COURSE".equals(e.getSourceType())) {
+            return true;
+        }
+        return e.getCourseId() != null && !e.getCourseId().isBlank();
     }
 
     private <T> T retry(Supplier<T> action) {
