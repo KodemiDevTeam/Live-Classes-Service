@@ -33,7 +33,7 @@ public class JwtUtil {
     }
 
     public String extractName(String token) {
-        return extractAllClaims(token).get("name", String.class);
+        return extractAllClaims(token).get("username", String.class);
     }
 
     public String extractRole(String token) {
