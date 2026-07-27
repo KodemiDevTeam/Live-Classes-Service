@@ -51,6 +51,10 @@ cloud:
       static: ${AWS_REGION}
     stack:
       auto: false
+    cloudfront:
+      domain: ${CLOUDFRONT_RECORDINGS_DOMAIN:${CLOUDFRONT_DOMAIN:}}
+      key-pair-id: ${CLOUDFRONT_KEY_PAIR_ID:}
+      private-key-path: ${CLOUDFRONT_PRIVATE_KEY_PATH:}
 
 eureka:
   client:

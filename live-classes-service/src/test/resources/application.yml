@@ -1,0 +1,49 @@
+server:
+  port: 8086
+
+spring:
+  application:
+    name: live-classes-service
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: false
+
+eureka:
+  client:
+    enabled: false
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+jwt:
+  secret: k8Jd9wQ2x+4aB3d1FJtL8vZ5X0yQ1V7n2gHqM4sP1tE=
+
+videosdk:
+  api:
+    key: test-key
+    secret: test-secret
+    endpoint: https://api.videosdk.live
+
+dynamodb:
+  region: ap-south-1
+
+cloud:
+  aws:
+    credentials:
+      access-key: test-access-key
+      secret-key: test-secret-key
+    region:
+      static: ap-south-1
+    stack:
+      auto: false
+    cloudfront:
+      domain: ""
+      key-pair-id: ""
+      private-key-path: ""
+
+aws:
+  s3:
+    bucket: kodemilabs-recordings-732304
+    region: ap-south-1
+    accessKey: test-access-key
+    secretKey: test-secret-key
