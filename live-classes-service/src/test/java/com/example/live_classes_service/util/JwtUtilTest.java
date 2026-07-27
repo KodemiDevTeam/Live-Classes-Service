@@ -28,7 +28,7 @@ class JwtUtilTest {
     private String buildToken(String userId, String name, String role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
-        claims.put("name", name);
+        claims.put("username", name);
         claims.put("role", role);
         long now = System.currentTimeMillis();
         return "Bearer " + Jwts.builder()

@@ -4,8 +4,7 @@ import com.example.live_classes_service.dto.request.CreateLiveClassRequest;
 import com.example.live_classes_service.dto.response.SessionStatusResponse;
 import com.example.live_classes_service.dto.response.LiveClassJoinResponseDTO;
 import com.example.live_classes_service.dto.response.LiveClassResponseDTO;
-import com.example.live_classes_service.exception.BadRequestException;
-import com.example.live_classes_service.exception.UnauthorizedException;
+import com.example.live_classes_service.exception.*;
 import com.example.live_classes_service.feign.EnrollmentClient;
 import com.example.live_classes_service.model.LiveClassEntity;
 import com.example.live_classes_service.repository.LiveClassRepository;
@@ -45,13 +44,14 @@ class LiveClassServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        entity = LiveClassEntity.builder()
-                .liveClassId(LIVE_CLASS_ID).courseId(COURSE_ID)
-                .trainerId(TRAINER_ID).trainerName(TRAINER_NAME)
-                .roomId(ROOM_ID).title("Test Class").description("Desc")
-                .status("SCHEDULED").sessionType("LIVE_CLASS")
-                .actionType("CREATED").isRecording(false).maxParticipants(50)
-                .build();
+        entity = new LiveClassEntity();
+        entity.setLiveClassId(LIVE_CLASS_ID);
+        entity.setTrainerId(TRAINER_ID);
+        entity.setTitle("Test Class");
+        entity.setRoomId(ROOM_ID);
+        entity.setCourseId(COURSE_ID);
+        entity.setStatus("PENDING");
+        entity.setIsRecording(false);
     }
 
     // ── createLiveClass ──────────────────────────────────────────────────────
@@ -64,8 +64,8 @@ class LiveClassServiceImplTest {
         when(videoSDKService.createRoom()).thenReturn(ROOM_ID);
 
         CreateLiveClassRequest req = new CreateLiveClassRequest();
-        req.setTitle("Test Class"); req.setCourseId(COURSE_ID);
-        req.setScheduledAt("2026-05-01T10:00:00Z"); req.setMaxParticipants(50);
+        req.setTitle("Test Class");
+        req.setCourseId(COURSE_ID);
 
         LiveClassResponseDTO result = service.createLiveClass(req, TOKEN);
 
@@ -79,7 +79,7 @@ class LiveClassServiceImplTest {
     void createLiveClass_notTrainer_throwsUnauthorized() {
         when(jwtUtil.extractRole(TOKEN)).thenReturn("LEARNER");
         CreateLiveClassRequest req = new CreateLiveClassRequest();
-        assertThrows(UnauthorizedException.class,
+        assertThrows(ForbiddenException.class,
                 () -> service.createLiveClass(req, TOKEN));
         verify(repository, never()).save(any());
     }
@@ -91,7 +91,7 @@ class LiveClassServiceImplTest {
         when(jwtUtil.extractName(TOKEN)).thenReturn(TRAINER_NAME);
         when(videoSDKService.createRoom()).thenThrow(new RuntimeException("API down"));
         CreateLiveClassRequest req = new CreateLiveClassRequest();
-        assertThrows(BadRequestException.class,
+        assertThrows(VideoSDKException.class,
                 () -> service.createLiveClass(req, TOKEN));
     }
 
@@ -113,7 +113,7 @@ class LiveClassServiceImplTest {
     @Test
     void startLiveClass_notFound_throwsBadRequest() {
         when(repository.findById(LIVE_CLASS_ID)).thenReturn(null);
-        assertThrows(BadRequestException.class, () -> service.startLiveClass(LIVE_CLASS_ID, TOKEN));
+        assertThrows(ResourceNotFoundException.class, () -> service.startLiveClass(LIVE_CLASS_ID, TOKEN));
     }
 
     @Test
@@ -122,7 +122,7 @@ class LiveClassServiceImplTest {
         when(repository.findById(LIVE_CLASS_ID)).thenReturn(entity);
         when(jwtUtil.extractUserId(TOKEN)).thenReturn(TRAINER_ID);
         when(jwtUtil.extractName(TOKEN)).thenReturn(TRAINER_NAME);
-        assertThrows(BadRequestException.class, () -> service.startLiveClass(LIVE_CLASS_ID, TOKEN));
+        assertThrows(ConflictException.class, () -> service.startLiveClass(LIVE_CLASS_ID, TOKEN));
     }
 
     @Test
@@ -131,7 +131,7 @@ class LiveClassServiceImplTest {
         when(jwtUtil.extractUserId(TOKEN)).thenReturn(TRAINER_ID);
         when(jwtUtil.extractName(TOKEN)).thenReturn(TRAINER_NAME);
         when(repository.updateStatusIfNotStarted(eq(LIVE_CLASS_ID), anyString(), anyString())).thenReturn(false);
-        assertThrows(BadRequestException.class, () -> service.startLiveClass(LIVE_CLASS_ID, TOKEN));
+        assertThrows(ConflictException.class, () -> service.startLiveClass(LIVE_CLASS_ID, TOKEN));
     }
 
     @Test
@@ -139,7 +139,7 @@ class LiveClassServiceImplTest {
         when(repository.findById(LIVE_CLASS_ID)).thenReturn(entity);
         when(jwtUtil.extractUserId(TOKEN)).thenReturn("other-user");
         when(jwtUtil.extractName(TOKEN)).thenReturn("Other");
-        assertThrows(UnauthorizedException.class, () -> service.startLiveClass(LIVE_CLASS_ID, TOKEN));
+        assertThrows(ForbiddenException.class, () -> service.startLiveClass(LIVE_CLASS_ID, TOKEN));
     }
 
     // ── joinLiveClass ────────────────────────────────────────────────────────
@@ -163,7 +163,7 @@ class LiveClassServiceImplTest {
     @Test
     void joinLiveClass_notStarted_throwsBadRequest() {
         when(repository.findById(LIVE_CLASS_ID)).thenReturn(entity);
-        assertThrows(BadRequestException.class, () -> service.joinLiveClass(LIVE_CLASS_ID, TOKEN));
+        assertThrows(ConflictException.class, () -> service.joinLiveClass(LIVE_CLASS_ID, TOKEN));
     }
 
     @Test
@@ -216,7 +216,7 @@ class LiveClassServiceImplTest {
         when(jwtUtil.extractUserId(TOKEN)).thenReturn("user-001");
         when(jwtUtil.extractRole(TOKEN)).thenReturn("ADMIN");
 
-        assertThrows(UnauthorizedException.class, () -> service.joinLiveClass(LIVE_CLASS_ID, TOKEN));
+        assertThrows(ForbiddenException.class, () -> service.joinLiveClass(LIVE_CLASS_ID, TOKEN));
     }
 
     @Test
@@ -226,7 +226,7 @@ class LiveClassServiceImplTest {
         when(jwtUtil.extractUserId(TOKEN)).thenReturn("other-trainer");
         when(jwtUtil.extractRole(TOKEN)).thenReturn("TRAINER");
 
-        assertThrows(UnauthorizedException.class, () -> service.joinLiveClass(LIVE_CLASS_ID, TOKEN));
+        assertThrows(ForbiddenException.class, () -> service.joinLiveClass(LIVE_CLASS_ID, TOKEN));
     }
 
     // ── getLiveClassesByCourse ───────────────────────────────────────────────
@@ -265,7 +265,7 @@ class LiveClassServiceImplTest {
     void startRecording_notTrainer_throwsUnauthorized() {
         when(repository.findById(LIVE_CLASS_ID)).thenReturn(entity);
         when(jwtUtil.extractUserId(TOKEN)).thenReturn("other-user");
-        assertThrows(UnauthorizedException.class, () -> service.startRecording(LIVE_CLASS_ID, TOKEN));
+        assertThrows(ForbiddenException.class, () -> service.startRecording(LIVE_CLASS_ID, TOKEN));
     }
 
     // ── stopRecording ────────────────────────────────────────────────────────
@@ -297,12 +297,12 @@ class LiveClassServiceImplTest {
     void endLiveClass_notTrainer_throwsUnauthorized() {
         when(repository.findById(LIVE_CLASS_ID)).thenReturn(entity);
         when(jwtUtil.extractUserId(TOKEN)).thenReturn("other-user");
-        assertThrows(UnauthorizedException.class, () -> service.endLiveClass(LIVE_CLASS_ID, TOKEN));
+        assertThrows(ForbiddenException.class, () -> service.endLiveClass(LIVE_CLASS_ID, TOKEN));
     }
 
     @Test
     void endLiveClass_notFound_throwsBadRequest() {
         when(repository.findById(LIVE_CLASS_ID)).thenReturn(null);
-        assertThrows(BadRequestException.class, () -> service.endLiveClass(LIVE_CLASS_ID, TOKEN));
+        assertThrows(ResourceNotFoundException.class, () -> service.endLiveClass(LIVE_CLASS_ID, TOKEN));
     }
 }

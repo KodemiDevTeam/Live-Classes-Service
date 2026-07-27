@@ -12,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
+import com.example.live_classes_service.exception.VideoSDKException;
+
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -58,7 +60,7 @@ class VideoSDKServiceTest {
         ResponseEntity<Map<String, Object>> response = ResponseEntity.ok(null);
         when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class),
                 any(ParameterizedTypeReference.class))).thenReturn(response);
-        assertThrows(IllegalStateException.class, () -> service.createRoom());
+        assertThrows(VideoSDKException.class, () -> service.createRoom());
     }
 
     @Test

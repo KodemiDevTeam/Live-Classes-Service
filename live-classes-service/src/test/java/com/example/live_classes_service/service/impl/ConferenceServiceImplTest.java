@@ -4,9 +4,7 @@ import com.example.live_classes_service.dto.request.CreateConferenceRequest;
 import com.example.live_classes_service.dto.response.ConferenceJoinResponseDTO;
 import com.example.live_classes_service.dto.response.ConferenceResponseDTO;
 import com.example.live_classes_service.dto.response.SessionStatusResponse;
-import com.example.live_classes_service.exception.BadRequestException;
-import com.example.live_classes_service.exception.NullBodyException;
-import com.example.live_classes_service.exception.UnauthorizedException;
+import com.example.live_classes_service.exception.*;
 import com.example.live_classes_service.feign.EnrollmentClient;
 import com.example.live_classes_service.model.ConferenceEntity;
 import com.example.live_classes_service.repository.ConferenceRepository;
@@ -71,7 +69,7 @@ class ConferenceServiceImplTest {
         when(jwtUtil.extractName(TOKEN)).thenReturn(ORGANIZER_NAME);
         when(videoSDKService.createRoom()).thenThrow(new RuntimeException("down"));
         CreateConferenceRequest req = new CreateConferenceRequest();
-        assertThrows(BadRequestException.class, () -> service.createConference(req, TOKEN));
+        assertThrows(VideoSDKException.class, () -> service.createConference(req, TOKEN));
     }
 
     @Test void startConference_success() {
@@ -90,7 +88,7 @@ class ConferenceServiceImplTest {
 
     @Test void startConference_notFound_throwsBadRequest() {
         when(repository.findById(CONFERENCE_ID)).thenReturn(null);
-        assertThrows(BadRequestException.class, () -> service.startConference(CONFERENCE_ID, TOKEN));
+        assertThrows(ResourceNotFoundException.class, () -> service.startConference(CONFERENCE_ID, TOKEN));
     }
 
     @Test void startConference_alreadyEnded_throwsBadRequest() {
@@ -98,7 +96,7 @@ class ConferenceServiceImplTest {
         when(repository.findById(CONFERENCE_ID)).thenReturn(entity);
         when(jwtUtil.extractUserId(TOKEN)).thenReturn(ORGANIZER_ID);
         when(jwtUtil.extractName(TOKEN)).thenReturn(ORGANIZER_NAME);
-        assertThrows(BadRequestException.class, () -> service.startConference(CONFERENCE_ID, TOKEN));
+        assertThrows(ConflictException.class, () -> service.startConference(CONFERENCE_ID, TOKEN));
     }
 
     @Test void startConference_alreadyStarted_throwsBadRequest() {
@@ -106,14 +104,14 @@ class ConferenceServiceImplTest {
         when(jwtUtil.extractUserId(TOKEN)).thenReturn(ORGANIZER_ID);
         when(jwtUtil.extractName(TOKEN)).thenReturn(ORGANIZER_NAME);
         when(repository.updateStatusIfNotStarted(eq(CONFERENCE_ID), anyString(), anyString())).thenReturn(false);
-        assertThrows(BadRequestException.class, () -> service.startConference(CONFERENCE_ID, TOKEN));
+        assertThrows(ConflictException.class, () -> service.startConference(CONFERENCE_ID, TOKEN));
     }
 
     @Test void startConference_notOrganizer_throwsUnauthorized() {
         when(repository.findById(CONFERENCE_ID)).thenReturn(entity);
         when(jwtUtil.extractUserId(TOKEN)).thenReturn("other");
         when(jwtUtil.extractName(TOKEN)).thenReturn("Other");
-        assertThrows(UnauthorizedException.class, () -> service.startConference(CONFERENCE_ID, TOKEN));
+        assertThrows(ForbiddenException.class, () -> service.startConference(CONFERENCE_ID, TOKEN));
     }
 
     @Test void joinConference_asTrainer_success() {
@@ -129,7 +127,7 @@ class ConferenceServiceImplTest {
 
     @Test void joinConference_notStarted_throwsBadRequest() {
         when(repository.findById(CONFERENCE_ID)).thenReturn(entity);
-        assertThrows(BadRequestException.class, () -> service.joinConference(CONFERENCE_ID, TOKEN));
+        assertThrows(ConflictException.class, () -> service.joinConference(CONFERENCE_ID, TOKEN));
     }
 
     @Test void joinConference_asLearner_enrolled_success() {
@@ -167,7 +165,7 @@ class ConferenceServiceImplTest {
         when(repository.findById(CONFERENCE_ID)).thenReturn(entity);
         when(jwtUtil.extractUserId(TOKEN)).thenReturn("user-001");
         when(jwtUtil.extractRole(TOKEN)).thenReturn("ADMIN");
-        assertThrows(UnauthorizedException.class, () -> service.joinConference(CONFERENCE_ID, TOKEN));
+        assertThrows(ForbiddenException.class, () -> service.joinConference(CONFERENCE_ID, TOKEN));
     }
 
     @Test void joinConference_asTrainer_notOrganizer_throwsUnauthorized() {
@@ -175,7 +173,7 @@ class ConferenceServiceImplTest {
         when(repository.findById(CONFERENCE_ID)).thenReturn(entity);
         when(jwtUtil.extractUserId(TOKEN)).thenReturn("other-trainer");
         when(jwtUtil.extractRole(TOKEN)).thenReturn("TRAINER");
-        assertThrows(UnauthorizedException.class, () -> service.joinConference(CONFERENCE_ID, TOKEN));
+        assertThrows(ForbiddenException.class, () -> service.joinConference(CONFERENCE_ID, TOKEN));
     }
 
     @Test void startRecording_success() {
@@ -189,7 +187,7 @@ class ConferenceServiceImplTest {
     @Test void startRecording_notOrganizer_throwsUnauthorized() {
         when(repository.findById(CONFERENCE_ID)).thenReturn(entity);
         when(jwtUtil.extractUserId(TOKEN)).thenReturn("other");
-        assertThrows(UnauthorizedException.class, () -> service.startRecording(CONFERENCE_ID, TOKEN));
+        assertThrows(ForbiddenException.class, () -> service.startRecording(CONFERENCE_ID, TOKEN));
     }
 
     @Test void stopRecording_success() {
@@ -210,11 +208,11 @@ class ConferenceServiceImplTest {
     @Test void endConference_notOrganizer_throwsUnauthorized() {
         when(repository.findById(CONFERENCE_ID)).thenReturn(entity);
         when(jwtUtil.extractUserId(TOKEN)).thenReturn("other");
-        assertThrows(UnauthorizedException.class, () -> service.endConference(CONFERENCE_ID, TOKEN));
+        assertThrows(ForbiddenException.class, () -> service.endConference(CONFERENCE_ID, TOKEN));
     }
 
     @Test void endConference_notFound_throwsBadRequest() {
         when(repository.findById(CONFERENCE_ID)).thenReturn(null);
-        assertThrows(BadRequestException.class, () -> service.endConference(CONFERENCE_ID, TOKEN));
+        assertThrows(ResourceNotFoundException.class, () -> service.endConference(CONFERENCE_ID, TOKEN));
     }
 }

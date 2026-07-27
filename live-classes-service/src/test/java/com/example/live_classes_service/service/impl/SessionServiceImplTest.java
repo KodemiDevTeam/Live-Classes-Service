@@ -4,8 +4,7 @@ import com.example.live_classes_service.dto.request.CreateSessionRequest;
 import com.example.live_classes_service.dto.response.SessionJoinResponseDTO;
 import com.example.live_classes_service.dto.response.SessionResponseDTO;
 import com.example.live_classes_service.dto.response.SessionStatusResponse;
-import com.example.live_classes_service.exception.BadRequestException;
-import com.example.live_classes_service.exception.UnauthorizedException;
+import com.example.live_classes_service.exception.*;
 import com.example.live_classes_service.feign.EnrollmentClient;
 import com.example.live_classes_service.model.SessionEntity;
 import com.example.live_classes_service.repository.SessionRepository;
@@ -66,7 +65,7 @@ class SessionServiceImplTest {
     void createSession_notTrainer_throwsUnauthorized() {
         when(jwtUtil.extractRole(TOKEN)).thenReturn("LEARNER");
         CreateSessionRequest req = new CreateSessionRequest();
-        assertThrows(UnauthorizedException.class, () -> service.createSession(req, TOKEN));
+        assertThrows(ForbiddenException.class, () -> service.createSession(req, TOKEN));
         verify(repository, never()).save(any());
     }
 
@@ -77,7 +76,7 @@ class SessionServiceImplTest {
         when(jwtUtil.extractName(TOKEN)).thenReturn(ORGANIZER_NAME);
         when(videoSDKService.createRoom()).thenThrow(new RuntimeException("down"));
         CreateSessionRequest req = new CreateSessionRequest();
-        assertThrows(BadRequestException.class, () -> service.createSession(req, TOKEN));
+        assertThrows(VideoSDKException.class, () -> service.createSession(req, TOKEN));
     }
 
     @Test
@@ -94,7 +93,7 @@ class SessionServiceImplTest {
     @Test
     void startSession_notFound_throwsBadRequest() {
         when(repository.findById(SESSION_ID)).thenReturn(null);
-        assertThrows(BadRequestException.class, () -> service.startSession(SESSION_ID, TOKEN));
+        assertThrows(ResourceNotFoundException.class, () -> service.startSession(SESSION_ID, TOKEN));
     }
 
     @Test
@@ -103,7 +102,7 @@ class SessionServiceImplTest {
         when(repository.findById(SESSION_ID)).thenReturn(entity);
         when(jwtUtil.extractUserId(TOKEN)).thenReturn(ORGANIZER_ID);
         when(jwtUtil.extractName(TOKEN)).thenReturn(ORGANIZER_NAME);
-        assertThrows(BadRequestException.class, () -> service.startSession(SESSION_ID, TOKEN));
+        assertThrows(ConflictException.class, () -> service.startSession(SESSION_ID, TOKEN));
     }
 
     @Test
@@ -121,7 +120,7 @@ class SessionServiceImplTest {
         when(repository.findById(SESSION_ID)).thenReturn(entity);
         when(jwtUtil.extractUserId(TOKEN)).thenReturn("other");
         when(jwtUtil.extractName(TOKEN)).thenReturn("Other");
-        assertThrows(UnauthorizedException.class, () -> service.startSession(SESSION_ID, TOKEN));
+        assertThrows(ForbiddenException.class, () -> service.startSession(SESSION_ID, TOKEN));
     }
 
     @Test
@@ -139,7 +138,7 @@ class SessionServiceImplTest {
     @Test
     void joinSession_notStarted_throwsBadRequest() {
         when(repository.findById(SESSION_ID)).thenReturn(entity);
-        assertThrows(BadRequestException.class, () -> service.joinSession(SESSION_ID, TOKEN));
+        assertThrows(ConflictException.class, () -> service.joinSession(SESSION_ID, TOKEN));
     }
 
     @Test
@@ -183,7 +182,7 @@ class SessionServiceImplTest {
         when(repository.findById(SESSION_ID)).thenReturn(entity);
         when(jwtUtil.extractUserId(TOKEN)).thenReturn("user-001");
         when(jwtUtil.extractRole(TOKEN)).thenReturn("ADMIN");
-        assertThrows(UnauthorizedException.class, () -> service.joinSession(SESSION_ID, TOKEN));
+        assertThrows(ForbiddenException.class, () -> service.joinSession(SESSION_ID, TOKEN));
     }
 
     @Test
@@ -192,7 +191,7 @@ class SessionServiceImplTest {
         when(repository.findById(SESSION_ID)).thenReturn(entity);
         when(jwtUtil.extractUserId(TOKEN)).thenReturn("other-trainer");
         when(jwtUtil.extractRole(TOKEN)).thenReturn("TRAINER");
-        assertThrows(UnauthorizedException.class, () -> service.joinSession(SESSION_ID, TOKEN));
+        assertThrows(ForbiddenException.class, () -> service.joinSession(SESSION_ID, TOKEN));
     }
 
     @Test
@@ -209,7 +208,7 @@ class SessionServiceImplTest {
     void startRecording_notOrganizer_throwsUnauthorized() {
         when(repository.findById(SESSION_ID)).thenReturn(entity);
         when(jwtUtil.extractUserId(TOKEN)).thenReturn("other");
-        assertThrows(UnauthorizedException.class, () -> service.startRecording(SESSION_ID, TOKEN));
+        assertThrows(ForbiddenException.class, () -> service.startRecording(SESSION_ID, TOKEN));
     }
 
     @Test
@@ -234,12 +233,12 @@ class SessionServiceImplTest {
     void endSession_notOrganizer_throwsUnauthorized() {
         when(repository.findById(SESSION_ID)).thenReturn(entity);
         when(jwtUtil.extractUserId(TOKEN)).thenReturn("other");
-        assertThrows(UnauthorizedException.class, () -> service.endSession(SESSION_ID, TOKEN));
+        assertThrows(ForbiddenException.class, () -> service.endSession(SESSION_ID, TOKEN));
     }
 
     @Test
     void endSession_notFound_throwsBadRequest() {
         when(repository.findById(SESSION_ID)).thenReturn(null);
-        assertThrows(BadRequestException.class, () -> service.endSession(SESSION_ID, TOKEN));
+        assertThrows(ResourceNotFoundException.class, () -> service.endSession(SESSION_ID, TOKEN));
     }
 }
