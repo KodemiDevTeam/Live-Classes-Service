@@ -269,7 +269,7 @@ public class ConferenceServiceImpl implements ConferenceService {
 
                 if (isLiveCourseConference) {
                     SessionStatusResponse status =
-                            enrollmentClient.getCourseEnrollmentStatus(entity.getCourseId(), token);
+                            enrollmentClient.getCourseEnrollmentStatus(entity.getCourseId(), token, "LIVE_COURSE");
             
                     if (status == null || !status.isEnrolled()) {
                         throw new BadRequestException("User not enrolled in this live course");

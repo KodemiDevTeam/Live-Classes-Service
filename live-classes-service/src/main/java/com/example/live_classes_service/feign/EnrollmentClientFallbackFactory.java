@@ -15,7 +15,7 @@ public class EnrollmentClientFallbackFactory implements FallbackFactory<Enrollme
     public EnrollmentClient create(Throwable cause) {
         return new EnrollmentClient() {
             @Override
-            public SessionStatusResponse getCourseEnrollmentStatus(String courseId, String token) {
+            public SessionStatusResponse getCourseEnrollmentStatus(String courseId, String token, String targetType) {
                 log.error("Downstream Enrollment Service failure during getCourseEnrollmentStatus for courseId={}. Cause: {}", 
                         courseId, cause.getMessage(), cause);
                 throw new EnrollmentServiceException("Enrollment service is currently unavailable. Access denied.", cause);

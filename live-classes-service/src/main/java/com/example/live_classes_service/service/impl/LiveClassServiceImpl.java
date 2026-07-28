@@ -315,7 +315,7 @@ public class LiveClassServiceImpl implements LiveClassService {
         if (ROLE_LEARNER.equals(role)) {
             try {
                 SessionStatusResponse status =
-                        enrollmentClient.getCourseEnrollmentStatus(entity.getCourseId(), token);
+                        enrollmentClient.getCourseEnrollmentStatus(entity.getCourseId(), token, "LIVE_COURSE");
 
                 if (status == null || !status.isEnrolled()) {
                     throw new BadRequestException("User not enrolled");
