@@ -113,8 +113,8 @@ public class ConferenceServiceImpl implements ConferenceService {
                 .courseId(request.getCourseId())
                 .moduleId(request.getModuleId())
                 .lessonId(request.getLessonId())
-                .sourceType(request.getSourceType())
-                .price(request.getPrice())
+                .sourceType(request.getSourceType() != null && !request.getSourceType().isBlank() ? request.getSourceType() : "CONFERENCE")
+                .price(request.getPrice() != null ? request.getPrice() : 0.0)
                 .build();
 
         repository.save(entity);
@@ -364,10 +364,21 @@ public class ConferenceServiceImpl implements ConferenceService {
      * older conferences (sourceType is null but courseId is set).
      */
     private boolean isLiveCourseConference(ConferenceEntity e) {
-        if ("LIVE_COURSE".equals(e.getSourceType())) {
+        if (e == null) {
+            return false;
+        }
+        if ("LIVE_COURSE".equalsIgnoreCase(e.getSourceType())) {
             return true;
         }
-        return e.getCourseId() != null && !e.getCourseId().isBlank();
+        if ("CONFERENCE".equalsIgnoreCase(e.getSourceType())
+                || "WEBINAR".equalsIgnoreCase(e.getSourceType())
+                || "STANDALONE".equalsIgnoreCase(e.getSourceType())) {
+            return false;
+        }
+        return e.getCourseId() != null
+                && !e.getCourseId().isBlank()
+                && !"null".equalsIgnoreCase(e.getCourseId().trim())
+                && !"none".equalsIgnoreCase(e.getCourseId().trim());
     }
 
     private <T> T retry(Supplier<T> action) {
