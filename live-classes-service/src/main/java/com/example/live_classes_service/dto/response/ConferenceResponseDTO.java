@@ -25,4 +25,5 @@ public class ConferenceResponseDTO {
     private String createdAt;
     private String courseId;
     private String sourceType;
+    private Double price;
 }

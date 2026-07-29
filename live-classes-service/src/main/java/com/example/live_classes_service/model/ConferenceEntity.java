@@ -33,6 +33,7 @@ public class ConferenceEntity {
     private String moduleId;
     private String lessonId;
     private String sourceType;
+    private Double price;
 
     @DynamoDBHashKey(attributeName = "conferenceId")
     public String getConferenceId() {

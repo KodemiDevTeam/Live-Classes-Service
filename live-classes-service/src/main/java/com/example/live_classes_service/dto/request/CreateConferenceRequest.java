@@ -17,4 +17,5 @@ public class CreateConferenceRequest {
     private String moduleId;
     private String lessonId;
     private String sourceType;
+    private Double price;
 }

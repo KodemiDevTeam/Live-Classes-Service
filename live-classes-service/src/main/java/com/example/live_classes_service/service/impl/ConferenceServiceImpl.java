@@ -114,6 +114,7 @@ public class ConferenceServiceImpl implements ConferenceService {
                 .moduleId(request.getModuleId())
                 .lessonId(request.getLessonId())
                 .sourceType(request.getSourceType())
+                .price(request.getPrice())
                 .build();
 
         repository.save(entity);
@@ -301,6 +302,7 @@ public class ConferenceServiceImpl implements ConferenceService {
     }
 
     private ConferenceResponseDTO mapToResponse(ConferenceEntity entity, String organizerId, String organizerName) {
+        Double effectivePrice = isLiveCourseConference(entity) ? 0.0 : (entity.getPrice() != null ? entity.getPrice() : 0.0);
         return ConferenceResponseDTO.builder()
                 .conferenceId(entity.getConferenceId())
                 .organizerId(organizerId)
@@ -318,6 +320,7 @@ public class ConferenceServiceImpl implements ConferenceService {
                 .isRecording(entity.getIsRecording())
                 .courseId(entity.getCourseId())
                 .sourceType(entity.getSourceType())
+                .price(effectivePrice)
                 .build();
     }
 
