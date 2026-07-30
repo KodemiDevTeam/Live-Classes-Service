@@ -46,14 +46,8 @@ public class LiveClassRepository {
             entity.setStartedAt(startedAt);
             entity.setActionType(actionType);
 
-            DynamoDBSaveExpression expression = new DynamoDBSaveExpression()
-                    .withExpectedEntry("status",
-                            new ExpectedAttributeValue()
-                                    .withValue(new AttributeValue().withS("SCHEDULED"))
-                    );
+            DynamoDBSaveExpression expression = new DynamoDBSaveExpression();
 
-            // Use UPDATE_SKIP_NULL_ATTRIBUTES to only update status & startedAt
-            // without deleting existing fields like title, description, trainerId, etc.
             DynamoDBMapperConfig config = DynamoDBMapperConfig.builder()
                     .withSaveBehavior(DynamoDBMapperConfig.SaveBehavior.UPDATE_SKIP_NULL_ATTRIBUTES)
                     .build();
@@ -62,6 +56,8 @@ public class LiveClassRepository {
             return true;
 
         } catch (ConditionalCheckFailedException e) {
+            return false;
+        } catch (Exception e) {
             return false;
         }
     }

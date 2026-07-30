@@ -51,12 +51,10 @@ public class SessionRepository {
             String actionType
     ) {
         try {
-
             Map<String, AttributeValue> key = new HashMap<>();
             key.put("sessionId", new AttributeValue().withS(sessionId));
 
             Map<String, AttributeValue> values = new HashMap<>();
-            values.put(":expected", new AttributeValue().withS(expectedStatus));
             values.put(":newStatus", new AttributeValue().withS(newStatus));
             values.put(":time", new AttributeValue().withS(timeValue));
             values.put(":actionType", new AttributeValue().withS(actionType));
@@ -70,17 +68,15 @@ public class SessionRepository {
                     .withTableName(tableName)
                     .withKey(key)
                     .withUpdateExpression("SET #status = :newStatus, #timeField = :time, #actionTypeField = :actionType")
-                    .withConditionExpression("#status = :expected")
                     .withExpressionAttributeNames(names)
                     .withExpressionAttributeValues(values);
 
             amazonDynamoDB.updateItem(request);
-
             log.info("Atomic update success for sessionId: {}", sessionId);
             return true;
 
         } catch (ConditionalCheckFailedException e) {
-            log.warn("Atomic update failed (already updated): {}", sessionId);
+            log.warn("Atomic update failed: {}", sessionId);
             return false;
         } catch (Exception e) {
             log.error("DynamoDB update failed", e);

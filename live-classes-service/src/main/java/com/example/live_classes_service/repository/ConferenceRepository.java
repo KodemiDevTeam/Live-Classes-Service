@@ -30,14 +30,8 @@ public class ConferenceRepository {
             entity.setStartedAt(startedAt);
             entity.setActionType(actionType);
 
-            DynamoDBSaveExpression expression = new DynamoDBSaveExpression()
-                    .withExpectedEntry("status",
-                            new ExpectedAttributeValue()
-                                    .withValue(new AttributeValue().withS("SCHEDULED"))
-                    );
+            DynamoDBSaveExpression expression = new DynamoDBSaveExpression();
 
-            // Use UPDATE_SKIP_NULL_ATTRIBUTES to only update status & startedAt
-            // without deleting existing fields like title, description, organizerId, etc.
             DynamoDBMapperConfig config = DynamoDBMapperConfig.builder()
                     .withSaveBehavior(DynamoDBMapperConfig.SaveBehavior.UPDATE_SKIP_NULL_ATTRIBUTES)
                     .build();
@@ -46,6 +40,8 @@ public class ConferenceRepository {
             return true;
 
         } catch (ConditionalCheckFailedException e) {
+            return false;
+        } catch (Exception e) {
             return false;
         }
     }

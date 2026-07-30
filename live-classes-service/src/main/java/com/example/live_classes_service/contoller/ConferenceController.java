@@ -74,7 +74,7 @@ public class ConferenceController {
 
         String response = service.startRecording(conferenceId, token);
 
-        log.info("Recording started | conferenceId={}", conferenceId);
+        log.info("Recording started | conferenceId is={}", conferenceId);
 
         return ResponseEntity.ok(response);
     }
@@ -144,4 +144,4 @@ public class ConferenceController {
 
         return ResponseEntity.ok(response);
     }
-}
+}
