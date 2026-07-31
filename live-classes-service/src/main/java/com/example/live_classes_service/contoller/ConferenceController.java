@@ -3,6 +3,7 @@ package com.example.live_classes_service.contoller;
 import com.example.live_classes_service.dto.request.CreateConferenceRequest;
 import com.example.live_classes_service.dto.response.ConferenceJoinResponseDTO;
 import com.example.live_classes_service.dto.response.ConferenceResponseDTO;
+import com.example.live_classes_service.dto.response.EnrollmentItemInfoResponse;
 import com.example.live_classes_service.service.ConferenceService;
 
 import jakarta.validation.Valid;
@@ -12,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -142,6 +144,27 @@ public class ConferenceController {
 
         log.info("Conference found | conferenceId={}", conferenceId);
 
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/internal/enrollment-info/{conferenceId}")
+    public ResponseEntity<EnrollmentItemInfoResponse> getConferenceEnrollmentInfo(
+            @PathVariable("conferenceId") String conferenceId
+    ) {
+        log.info("Internal request to fetch conference enrollment info | conferenceId={}", conferenceId);
+        ConferenceResponseDTO conference = service.getConference(conferenceId);
+        boolean isFree = conference.getPrice() == null || conference.getPrice() == 0.0;
+        EnrollmentItemInfoResponse response = EnrollmentItemInfoResponse.builder()
+                .targetId(conference.getConferenceId())
+                .creatorId(conference.getOrganizerId())
+                .targetType("CONFERENCE")
+                .title(conference.getTitle())
+                .pricingType(isFree ? "FREE" : "PAID")
+                .price(conference.getPrice() != null ? BigDecimal.valueOf(conference.getPrice()) : BigDecimal.ZERO)
+                .isFree(isFree)
+                .isVerified(true)
+                .status(conference.getStatus())
+                .build();
         return ResponseEntity.ok(response);
     }
 }
