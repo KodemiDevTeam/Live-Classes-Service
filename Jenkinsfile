@@ -2,10 +2,6 @@ pipeline {
 
     agent any
 
-    tools {
-        jdk 'JDK17'
-    }
-
     options {
         disableConcurrentBuilds()
         timeout(time: 1, unit: 'HOURS')
