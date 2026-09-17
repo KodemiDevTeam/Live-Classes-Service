@@ -35,18 +35,42 @@ pipeline {
                         echo        BUILD AND TEST
                         echo ========================================
 
-                        call mvnw.cmd clean verify ^
+                        call mvnw.cmd clean test ^
                         -Deureka.client.enabled=false ^
                         -Dspring.cloud.discovery.enabled=false
 
                         if %ERRORLEVEL% NEQ 0 (
                             echo.
-                            echo ERROR: Maven build/test failed.
+                            echo ERROR: Maven tests failed.
                             exit /b %ERRORLEVEL%
                         )
 
                         echo.
-                        echo BUILD AND TEST COMPLETED SUCCESSFULLY
+                        echo TESTS COMPLETED SUCCESSFULLY
+                        echo ========================================
+                    '''
+                }
+            }
+        }
+
+        stage('Generate JaCoCo Coverage Report') {
+            steps {
+                dir('live-classes-service') {
+                    bat '''
+                        echo ========================================
+                        echo     GENERATING JACOCO REPORT
+                        echo ========================================
+
+                        call mvnw.cmd jacoco:report
+
+                        if %ERRORLEVEL% NEQ 0 (
+                            echo.
+                            echo ERROR: JaCoCo report generation failed.
+                            exit /b %ERRORLEVEL%
+                        )
+
+                        echo.
+                        echo JACOCO REPORT GENERATED
                         echo ========================================
                     '''
                 }
@@ -58,14 +82,16 @@ pipeline {
                 dir('live-classes-service') {
                     bat '''
                         echo ========================================
-                        echo        VERIFYING JACOCO REPORT
+                        echo     VERIFYING JACOCO XML REPORT
                         echo ========================================
 
                         if exist target\\site\\jacoco\\jacoco.xml (
-                            echo JaCoCo report found successfully.
-                            dir target\\site\\jacoco
+                            echo JaCoCo XML report found successfully.
+                            echo.
+                            dir target\\site\\jacoco\\jacoco.xml
                         ) else (
-                            echo ERROR: JaCoCo report is missing.
+                            echo.
+                            echo ERROR: JaCoCo XML report is missing.
                             exit /b 1
                         )
 
