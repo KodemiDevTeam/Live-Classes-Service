@@ -5,13 +5,10 @@ pipeline {
     options {
         disableConcurrentBuilds()
         timeout(time: 1, unit: 'HOURS')
+        skipDefaultCheckout(true)
     }
 
     environment {
-        JAVA_HOME = '/opt/java/openjdk'
-        MAVEN_HOME = '/usr/share/maven'
-        PATH = "/opt/java/openjdk/bin:/usr/share/maven/bin:/usr/bin:/bin:/usr/local/bin"
-
         SONAR_PROJECT_KEY  = 'Live-Classes-Service'
         SONAR_PROJECT_NAME = 'Live-Classes-Service'
     }
@@ -39,19 +36,20 @@ pipeline {
         stage('Build & Test (with Coverage)') {
             steps {
                 dir('live-classes-service') {
+                    bat '''
+                    echo ===== BUILD + TEST =====
 
-                    catchError(
-                        buildResult: 'SUCCESS',
-                        stageResult: 'UNSTABLE'
-                    ) {
-                        sh '''
-                            echo "===== BUILD + TEST ====="
+                    call mvnw.cmd clean verify ^
+                    -Deureka.client.enabled=false ^
+                    -Dspring.cloud.discovery.enabled=false
 
-                            mvn clean verify \
-                            -Deureka.client.enabled=false \
-                            -Dspring.cloud.discovery.enabled=false
-                        '''
-                    }
+                    if %ERRORLEVEL% NEQ 0 (
+                        echo ERROR: Maven build/test failed
+                        exit /b %ERRORLEVEL%
+                    )
+
+                    echo ===== BUILD + TEST COMPLETED =====
+                    '''
                 }
             }
         }
@@ -61,16 +59,16 @@ pipeline {
         stage('Verify Coverage Report') {
             steps {
                 dir('live-classes-service') {
-                    sh '''
-                        echo "===== VERIFYING JACOCO ====="
+                    bat '''
+                    echo ===== VERIFYING JACOCO =====
 
-                        if [ -f target/site/jacoco/jacoco.xml ]; then
-                            echo "JaCoCo report found"
-                            ls -lh target/site/jacoco/jacoco.xml
-                        else
-                            echo "JaCoCo report missing"
-                            exit 1
-                        fi
+                    if exist target\\site\\jacoco\\jacoco.xml (
+                        echo JaCoCo report found
+                        dir target\\site\\jacoco
+                    ) else (
+                        echo ERROR: JaCoCo report missing
+                        exit /b 1
+                    )
                     '''
                 }
             }
@@ -91,15 +89,22 @@ pipeline {
                             )
                         ]) {
 
-                            sh '''
-                                echo "===== SONAR ANALYSIS ====="
+                            bat '''
+                            echo ===== SONAR ANALYSIS =====
 
-                                mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-                                -Dsonar.projectKey=$SONAR_PROJECT_KEY \
-                                -Dsonar.projectName=$SONAR_PROJECT_NAME \
-                                -Dsonar.login=$SONAR_TOKEN \
-                                -Dsonar.java.binaries=target/classes \
-                                -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                            call mvnw.cmd -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar ^
+                            -Dsonar.projectKey=%SONAR_PROJECT_KEY% ^
+                            -Dsonar.projectName=%SONAR_PROJECT_NAME% ^
+                            -Dsonar.token=%SONAR_TOKEN% ^
+                            -Dsonar.java.binaries=target/classes ^
+                            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+
+                            if %ERRORLEVEL% NEQ 0 (
+                                echo ERROR: SonarQube analysis failed
+                                exit /b %ERRORLEVEL%
+                            )
+
+                            echo ===== SONAR ANALYSIS COMPLETED =====
                             '''
                         }
                     }
@@ -117,7 +122,7 @@ pipeline {
                         def qg = waitForQualityGate()
 
                         if (qg.status != 'OK') {
-                            error "❌ Pipeline failed due to Quality Gate: ${qg.status}"
+                            error "Pipeline failed due to Quality Gate: ${qg.status}"
                         }
                     }
                 }
@@ -138,8 +143,8 @@ pipeline {
                         )
                     ]) {
 
-                        sh '''
-                            echo "===== RUNNING OWASP DEPENDENCY CHECK ====="
+                        bat '''
+                        echo ===== RUNNING OWASP DEPENDENCY CHECK =====
                         '''
 
                         dependencyCheck(
@@ -176,19 +181,19 @@ pipeline {
     post {
 
         success {
-            echo '✅ SUCCESS: Build, Test, Sonar & Security checks passed'
+            echo 'SUCCESS: Build, Test, Sonar & Security checks passed'
         }
 
         unstable {
-            echo '⚠️ UNSTABLE: Coverage threshold was not met, but SonarQube analysis was completed'
+            echo 'UNSTABLE: Coverage threshold was not met, but SonarQube analysis was completed'
         }
 
         failure {
-            echo '❌ FAILED: Pipeline execution failed'
+            echo 'FAILED: Pipeline execution failed'
         }
 
         always {
-            echo '📌 Pipeline execution completed'
+            echo 'Pipeline execution completed'
         }
     }
 }
