@@ -11,6 +11,9 @@ pipeline {
     environment {
         SONAR_PROJECT_KEY  = 'Live-Classes-Service'
         SONAR_PROJECT_NAME = 'Live-Classes-Service'
+
+        // Java 21 for SonarQube Scanner
+        SONAR_JAVA_HOME = 'C:\\Program Files\\Java\\jdk-21.0.12.1'
     }
 
     stages {
@@ -34,6 +37,9 @@ pipeline {
                         echo ========================================
                         echo        BUILD AND TEST
                         echo ========================================
+
+                        echo Java version used for application build:
+                        java -version
 
                         call mvnw.cmd clean test ^
                         -Deureka.client.enabled=false ^
@@ -70,7 +76,7 @@ pipeline {
                         )
 
                         echo.
-                        echo JACOCO REPORT GENERATED
+                        echo JACOCO REPORT GENERATED SUCCESSFULLY
                         echo ========================================
                     '''
                 }
@@ -86,6 +92,7 @@ pipeline {
                         echo ========================================
 
                         if exist target\\site\\jacoco\\jacoco.xml (
+                            echo.
                             echo JaCoCo XML report found successfully.
                             echo.
                             dir target\\site\\jacoco\\jacoco.xml
@@ -116,7 +123,24 @@ pipeline {
 
                             bat '''
                                 echo ========================================
-                                echo        SONARQUBE ANALYSIS
+                                echo       SONARQUBE ANALYSIS
+                                echo ========================================
+
+                                echo Switching to Java 21 for SonarQube...
+
+                                set "JAVA_HOME=%SONAR_JAVA_HOME%"
+                                set "PATH=%JAVA_HOME%\\bin;%PATH%"
+
+                                echo.
+                                echo Java version for SonarQube:
+                                java -version
+
+                                echo.
+                                echo JAVA_HOME:
+                                echo %JAVA_HOME%
+
+                                echo.
+                                echo Running SonarQube analysis...
                                 echo ========================================
 
                                 call mvnw.cmd -B ^
