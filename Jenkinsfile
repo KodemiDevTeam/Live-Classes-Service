@@ -82,7 +82,7 @@ pipeline {
             steps {
                 dir('live-classes-service') {
 
-                    withSonarQubeEnv('sonarscanner') {
+                    withSonarQubeEnv('SonarQube2') {
 
                         withCredentials([
                             string(
