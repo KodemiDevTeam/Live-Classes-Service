@@ -15,15 +15,11 @@ pipeline {
 
     stages {
 
-        /* ================= CLEAN ================= */
-
         stage('Clean Workspace') {
             steps {
                 cleanWs()
             }
         }
-
-        /* ================= CHECKOUT ================= */
 
         stage('Checkout Code') {
             steps {
@@ -31,50 +27,53 @@ pipeline {
             }
         }
 
-        /* ================= BUILD + TEST ================= */
-
-        stage('Build & Test (with Coverage)') {
+        stage('Build & Test') {
             steps {
                 dir('live-classes-service') {
                     bat '''
-                    echo ===== BUILD + TEST =====
+                        echo ========================================
+                        echo        BUILD AND TEST
+                        echo ========================================
 
-                    call mvnw.cmd clean verify ^
-                    -Deureka.client.enabled=false ^
-                    -Dspring.cloud.discovery.enabled=false
+                        call mvnw.cmd clean verify ^
+                        -Deureka.client.enabled=false ^
+                        -Dspring.cloud.discovery.enabled=false
 
-                    if %ERRORLEVEL% NEQ 0 (
-                        echo ERROR: Maven build/test failed
-                        exit /b %ERRORLEVEL%
-                    )
+                        if %ERRORLEVEL% NEQ 0 (
+                            echo.
+                            echo ERROR: Maven build/test failed.
+                            exit /b %ERRORLEVEL%
+                        )
 
-                    echo ===== BUILD + TEST COMPLETED =====
+                        echo.
+                        echo BUILD AND TEST COMPLETED SUCCESSFULLY
+                        echo ========================================
                     '''
                 }
             }
         }
-
-        /* ================= VERIFY JACOCO ================= */
 
         stage('Verify Coverage Report') {
             steps {
                 dir('live-classes-service') {
                     bat '''
-                    echo ===== VERIFYING JACOCO =====
+                        echo ========================================
+                        echo        VERIFYING JACOCO REPORT
+                        echo ========================================
 
-                    if exist target\\site\\jacoco\\jacoco.xml (
-                        echo JaCoCo report found
-                        dir target\\site\\jacoco
-                    ) else (
-                        echo ERROR: JaCoCo report missing
-                        exit /b 1
-                    )
+                        if exist target\\site\\jacoco\\jacoco.xml (
+                            echo JaCoCo report found successfully.
+                            dir target\\site\\jacoco
+                        ) else (
+                            echo ERROR: JaCoCo report is missing.
+                            exit /b 1
+                        )
+
+                        echo ========================================
                     '''
                 }
             }
         }
-
-        /* ================= SONAR ANALYSIS ================= */
 
         stage('SonarQube Analysis') {
             steps {
@@ -90,29 +89,33 @@ pipeline {
                         ]) {
 
                             bat '''
-                            echo ===== SONAR ANALYSIS =====
+                                echo ========================================
+                                echo        SONARQUBE ANALYSIS
+                                echo ========================================
 
-                            call mvnw.cmd -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar ^
-                            -Dsonar.projectKey=%SONAR_PROJECT_KEY% ^
-                            -Dsonar.projectName=%SONAR_PROJECT_NAME% ^
-                            -Dsonar.token=%SONAR_TOKEN% ^
-                            -Dsonar.java.binaries=target/classes ^
-                            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                                call mvnw.cmd -B ^
+                                org.sonarsource.scanner.maven:sonar-maven-plugin:sonar ^
+                                -Dsonar.projectKey=%SONAR_PROJECT_KEY% ^
+                                -Dsonar.projectName=%SONAR_PROJECT_NAME% ^
+                                -Dsonar.token=%SONAR_TOKEN% ^
+                                -Dsonar.java.binaries=target/classes ^
+                                -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
 
-                            if %ERRORLEVEL% NEQ 0 (
-                                echo ERROR: SonarQube analysis failed
-                                exit /b %ERRORLEVEL%
-                            )
+                                if %ERRORLEVEL% NEQ 0 (
+                                    echo.
+                                    echo ERROR: SonarQube analysis failed.
+                                    exit /b %ERRORLEVEL%
+                                )
 
-                            echo ===== SONAR ANALYSIS COMPLETED =====
+                                echo.
+                                echo SONARQUBE ANALYSIS COMPLETED SUCCESSFULLY
+                                echo ========================================
                             '''
                         }
                     }
                 }
             }
         }
-
-        /* ================= QUALITY GATE ================= */
 
         stage('Quality Gate') {
             steps {
@@ -124,16 +127,15 @@ pipeline {
                         if (qg.status != 'OK') {
                             error "Pipeline failed due to Quality Gate: ${qg.status}"
                         }
+
+                        echo "SonarQube Quality Gate: PASSED"
                     }
                 }
             }
         }
 
-        /* ================= SECURITY ================= */
-
         stage('OWASP Dependency Check') {
             steps {
-
                 dir('live-classes-service') {
 
                     withCredentials([
@@ -144,23 +146,23 @@ pipeline {
                     ]) {
 
                         bat '''
-                        echo ===== RUNNING OWASP DEPENDENCY CHECK =====
+                            echo ========================================
+                            echo     OWASP DEPENDENCY CHECK
+                            echo ========================================
                         '''
 
                         dependencyCheck(
                             additionalArguments: "--nvdApiKey ${NVD_KEY} --format XML --out . --disableOssIndex",
                             odcInstallation: 'Default'
                         )
-                    }
 
-                    dependencyCheckPublisher(
-                        pattern: 'dependency-check-report.xml'
-                    )
+                        dependencyCheckPublisher(
+                            pattern: 'dependency-check-report.xml'
+                        )
+                    }
                 }
             }
         }
-
-        /* ================= ARCHIVE ================= */
 
         stage('Archive Reports') {
             steps {
@@ -181,19 +183,31 @@ pipeline {
     post {
 
         success {
-            echo 'SUCCESS: Build, Test, Sonar & Security checks passed'
+            echo '''
+            ========================================
+            PIPELINE COMPLETED SUCCESSFULLY
+            ========================================
+            '''
         }
 
         unstable {
-            echo 'UNSTABLE: Coverage threshold was not met, but SonarQube analysis was completed'
+            echo '''
+            ========================================
+            PIPELINE COMPLETED WITH WARNINGS
+            ========================================
+            '''
         }
 
         failure {
-            echo 'FAILED: Pipeline execution failed'
+            echo '''
+            ========================================
+            PIPELINE FAILED
+            ========================================
+            '''
         }
 
         always {
-            echo 'Pipeline execution completed'
+            echo "Jenkins pipeline execution completed."
         }
     }
 }
